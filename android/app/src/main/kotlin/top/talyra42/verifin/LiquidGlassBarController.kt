@@ -22,8 +22,10 @@ import com.example.liquidglass.LiquidGlassTabBar
  * 玻璃的 RenderNode 每帧重录 Flutter 内容，折射与原生宿主同一条渲染管线。
  *
  * 配色：玻璃与水滴保持库的外观；选中项图标/文字用主题主色（Dart 下发两档变体），
- * 未选中项用中性墨色。两档按库的背景亮度采样（BackdropLuminanceMeter，与
- * BetterHeybox 相同）在浅底/深底之间切换。
+ * 未选中项用中性墨色。深浅极性取主题亮度：库的 BackdropLuminanceMeter 采样在
+ * TextureView（RenderMode.texture）下取不到内容——实测光滑亮度持续衰减到 0、
+ * isOverLight() 从不翻转，用它决定极性会把未选中项刷成白字压在浅色玻璃上，
+ * 因此不做内容采样。
  *
  * 初始化失败 / SDK<33 时静默不装，Flutter 侧 fallback 样式生效。
  */
@@ -39,7 +41,6 @@ class LiquidGlassBarController(private val activity: Activity) {
     private var installed = false
     private var flutterView: View? = null
     private var tabs: List<Tab> = emptyList()
-    private var selectedIndex = 0
     private var bottomInsetPx = 0
     private var dark = false
 
@@ -47,15 +48,16 @@ class LiquidGlassBarController(private val activity: Activity) {
     private var accentOverLight: Int? = null
     private var accentOverDark: Int? = null
 
-    /** 背景采样结果：true = 底下是浅色内容。首次采样前按主题亮度估计。 */
-    private var backdropOverLight = true
+    /// Dart 侧认定的当前选中下标，也是唯一权威：回声判定与重装初值都以它为准。
+    ///
+    /// 库只在选中值**真正变化**时回调 `onTabSelected`（见库的 `selectTab(index, changed)`）。
+    /// 早期实现用一个「期望值」标记来吞掉 Dart 驱动引发的自反回调，但那个标记只在回调里
+    /// 清除：当用户点的正好是库已选中的那一项时库不回调，标记滞留，之后对同一项的真实
+    /// 点击会被当成回声吞掉——表现就是点了没反应、卡在某个 Tab 上。
+    @Volatile private var dartSelectedIndex = 0
 
-    private var backdropMeter: LiquidGlassBackdropSampler? = null
-
-    /// Dart → 原生同步选中的期望值：原生回调等于该值时视为「同步引发的自反
-    /// 回调」吞掉。不能用一次性布尔标记——库对「设成相同值」不触发回调，标记
-    /// 会滞留并吞掉下一次真实点击（切页概率失效的根因）。
-    @Volatile private var expectedInboundIndex: Int? = null
+    /// 已知库当前停在的下标，避免对库重复设值。
+    private var librarySelectedIndex = 0
 
     val isActive: Boolean
         get() = installed && tabBar != null && Build.VERSION.SDK_INT >= 33
@@ -68,7 +70,7 @@ class LiquidGlassBarController(private val activity: Activity) {
     fun install(
         flutterView: View,
         tabs: List<Tab>,
-        selectedIndex: Int,
+        initialIndex: Int,
         dark: Boolean,
         bottomInsetPx: Int,
         accentOverLight: Int?,
@@ -77,7 +79,8 @@ class LiquidGlassBarController(private val activity: Activity) {
         if (Build.VERSION.SDK_INT < 33) return
         this.flutterView = flutterView
         this.tabs = tabs
-        this.selectedIndex = selectedIndex
+        this.dartSelectedIndex = initialIndex
+        this.librarySelectedIndex = initialIndex
         this.bottomInsetPx = bottomInsetPx
         this.dark = dark
         this.accentOverLight = accentOverLight
@@ -103,7 +106,7 @@ class LiquidGlassBarController(private val activity: Activity) {
                 backdropSource = flutterView
                 // Flutter 内容滚动不产生 Android 滚动事件，必须常驻重录 backdrop。
                 enableDynamicBackground = true
-                // 玻璃与水滴的亮度基准；选中/未选中文字由 repaintTabs 按采样结果上色。
+                // 玻璃与水滴的亮度基准，同时决定选中/未选中文字的墨色极性。
                 overLight = dark
             }
             // BetterHeybox 几何默认值：高 60dp、距底 16dp、左右 16dp（胶囊悬浮）。
@@ -114,15 +117,16 @@ class LiquidGlassBarController(private val activity: Activity) {
                 width = ViewGroup.LayoutParams.MATCH_PARENT
             }
             applyTabs(bar, tabs)
-            bar.selectedIndex = selectedIndex
-            // 原生 tab 点击/拖动 → Dart 侧切页（Shell 状态机不变）；与 Dart
-            // 同步引发的期望值相同的回调吞掉，防回环且不滞留。
+            bar.selectedIndex = librarySelectedIndex
+            // 原生 tab 点击/拖动 → Dart 侧切页（Shell 状态机不变）。库对「同步时设的
+            // 值」不触发回调，因此不会产生回声；这里只需按传入下标与 Dart 权威下标比对，
+            // 排除库因其他原因报回来的相同值。
             bar.onTabSelected = { index ->
                 // 库在点击后已切换选中项，这里补一次墨色刷新。
                 scheduleRepaint(bar)
-                if (index == expectedInboundIndex) {
-                    expectedInboundIndex = null
-                } else {
+                if (index != dartSelectedIndex) {
+                    librarySelectedIndex = index
+                    dartSelectedIndex = index
                     onTabSelected?.invoke(index)
                 }
             }
@@ -131,8 +135,6 @@ class LiquidGlassBarController(private val activity: Activity) {
             host = frame
             tabBar = bar
             installed = true
-            backdropOverLight = !dark
-            startBackdropMeter(bar)
             scheduleRepaint(bar)
         } catch (t: Throwable) {
             installed = false
@@ -153,7 +155,7 @@ class LiquidGlassBarController(private val activity: Activity) {
             return
         }
         install(
-            view, tabs, selectedIndex, dark, bottomInsetPx,
+            view, tabs, dartSelectedIndex, dark, bottomInsetPx,
             accentOverLight, accentOverDark)
     }
 
@@ -164,7 +166,7 @@ class LiquidGlassBarController(private val activity: Activity) {
             this.accentOverLight = accentOverLight
             this.accentOverDark = accentOverDark
             tabBar?.let {
-                // 玻璃与水滴的亮度基准随主题切换（不改动文字，文字由 repaintTabs 决定）。
+                // 玻璃与水滴的亮度基准随主题切换，文字墨色极性同步翻转。
                 it.overLight = dark
                 scheduleRepaint(it)
             }
@@ -200,68 +202,33 @@ class LiquidGlassBarController(private val activity: Activity) {
     fun updateSelection(index: Int) {
         try {
             if (!installed) return
-            // 库对「设成相同值」不触发回调；此时不设期望值，避免它滞留并在
-            // 下次真实点击同一 index 时被误吞。
-            if (index == selectedIndex) {
-                expectedInboundIndex = null
+            // Dart 是选中态的权威：先记下来，这个值同时用于识别库报回来的回声。
+            dartSelectedIndex = index
+            if (index == librarySelectedIndex) {
                 return
             }
-            selectedIndex = index
-            expectedInboundIndex = index
+            librarySelectedIndex = index
             tabBar?.let {
                 it.selectedIndex = index
                 scheduleRepaint(it)
             }
         } catch (t: Throwable) {
-            expectedInboundIndex = null
             android.util.Log.w(TAG, "updateSelection failed: $t")
         }
     }
 
     fun uninstall() {
         try {
-            backdropMeter?.stop()
             host?.let { (it.parent as? ViewGroup)?.removeView(it) }
         } catch (t: Throwable) {
             android.util.Log.w(TAG, "uninstall failed: $t")
         }
-        backdropMeter = null
         host = null
         tabBar = null
         installed = false
     }
 
-    /**
-     * 启动背景亮度采样（与 BetterHeybox 的 startBackdropMeter 相同）。库的采样器
-     * 自带滞回，isOverLight() 翻转时切回主线程刷新墨色。仅在挂到窗口后启动采样。
-     */
-    private fun startBackdropMeter(bar: LiquidGlassTabBar) {
-        backdropMeter?.stop()
-        val meter = LiquidGlassBackdropSampler(bar) {
-            val overLight = backdropMeter?.isOverLight() ?: return@LiquidGlassBackdropSampler
-            // SPIKE-LOG（临时，真机验证后删除）：观察采样值是否随背景变化。
-            android.util.Log.i(TAG, "SPIKE sample overLight=$overLight luma=${backdropMeter?.smoothedLuminance()}")
-            bar.post {
-                if (tabBar === bar && overLight != backdropOverLight) {
-                    backdropOverLight = overLight
-                    repaintTabs(bar)
-                }
-            }
-        }
-        backdropMeter = meter
-        bar.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-            override fun onViewAttachedToWindow(v: View) {
-                meter.start()
-            }
-
-            override fun onViewDetachedFromWindow(v: View) {
-                meter.stop()
-            }
-        })
-        if (bar.isAttachedToWindow) meter.start()
-    }
-
-    /// 库会在选中切换、换 tab 与采样翻转时重涂文字，所以这些时机之后都要刷新一次。
+    /// 库会在选中切换、换 tab 时重涂文字，所以这些时机之后都要刷新一次。
     /// 同时在下一帧补刷，覆盖库异步完成的样式更新。
     private fun scheduleRepaint(bar: LiquidGlassTabBar) {
         repaintTabs(bar)
@@ -271,13 +238,16 @@ class LiquidGlassBarController(private val activity: Activity) {
     }
 
     /**
-     * 选中项用主题主色变体（经库的 setSelectedTintColor，文字与图标同色），
-     * 未选中项直接给文字与图标设中性墨色。
+     * 选中项用主题主色变体（经库的 selectedTintColor，文字与图标同色），
+     * 未选中项直接给文字与图标设中性墨色。极性取主题亮度：浅色主题配深色墨、
+     * 深色主题配白色墨（内容采样在 TextureView 下取不到值，见类注释）。
      */
     private fun repaintTabs(bar: LiquidGlassTabBar) {
         if (tabs.isEmpty()) return
-        val accent = if (backdropOverLight) accentOverLight else accentOverDark
-        val ink = if (backdropOverLight) INK_OVER_LIGHT else INK_OVER_DARK
+        val overLight = !dark
+        val accent = if (overLight) accentOverLight else accentOverDark
+        val ink = if (overLight) INK_OVER_LIGHT else INK_OVER_DARK
+        // 选中项交给库的 selectedTintColor（文字与图标同色，实测生效）。
         bar.selectedTintColor = accent
         val row = findTabRow(bar, tabs.size) ?: run {
             // 库内部结构不符合预期：保留库默认配色，只影响对比度，不影响功能。
@@ -286,6 +256,8 @@ class LiquidGlassBarController(private val activity: Activity) {
         }
         val current = bar.selectedIndex
         for (index in 0 until row.childCount) {
+            // 选中项由 selectedTintColor 负责，这里只补未选中项的墨色——库给未选中项
+            // 用的白字在浅色玻璃上几乎看不见，这是本次修复的目标。
             if (index == current) continue
             val item = row.getChildAt(index) as? ViewGroup ?: continue
             item.findFirst(TextView::class.java)?.setTextColor(ink)

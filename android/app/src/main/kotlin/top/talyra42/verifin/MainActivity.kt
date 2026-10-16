@@ -210,7 +210,7 @@ class MainActivity : FlutterFragmentActivity() {
             controller.install(
                 flutterView = flutterView,
                 tabs = tabs,
-                selectedIndex = call.argument<Int>("selectedIndex") ?: 0,
+                initialIndex = call.argument<Int>("selectedIndex") ?: 0,
                 dark = call.argument<Boolean>("dark") ?: false,
                 bottomInsetPx = (call.argument<Double>("bottomInset") ?: 0.0).toInt(),
                 accentOverLight = argbArgument(call, "accentOverLight"),

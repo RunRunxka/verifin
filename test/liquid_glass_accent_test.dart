@@ -98,6 +98,32 @@ void main() {
     });
   });
 
+  test('原生安装通道携带两档主色变体，缺省时不发送颜色', () async {
+    const channel = MethodChannel('verifin/app');
+    final calls = <MethodCall>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      calls.add(call);
+      return true;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    await AppGlassBridge.install(
+      selectedIndex: 2,
+      dark: false,
+      accentOverLight: 0xFF0A0B0C,
+      accentOverDark: 0xFFF0F1F2,
+    );
+
+    final args = calls.single.arguments! as Map<Object?, Object?>;
+    expect(calls.single.method, 'installLiquidGlassBar');
+    expect(args['selectedIndex'], 2);
+    expect(args['dark'], false);
+    expect(args['accentOverLight'], 0xFF0A0B0C);
+    expect(args['accentOverDark'], 0xFFF0F1F2);
+  });
+
   testWidgets('降级路径的选中项文字随主题主色变化', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(360, 800);

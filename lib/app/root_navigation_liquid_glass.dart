@@ -115,9 +115,23 @@ class VeriLiquidGlassRootNavigation extends StatelessWidget {
         selectedLabelColor: scheme.primary,
         unselectedLabelColor: veriNavigationUnselected,
         adaptiveBrightness: false,
-        // 默认底栏玻璃会使用 24% 白色底；深色模式改用库文档定义的
-        // ios27Dark 材质，让玻璃压暗而不是发白。浅色模式保持原默认材质。
-        settings: isDark ? LiquidGlassSettings.ios27Dark : null,
+        // 浅色玻璃比库默认（24% 白，kBottomBarGlassDefaults，未从包公开导出）
+        // 更透：白底降到 14%，背后内容更可见；其余折射/模糊参数保持库默认。
+        // 深色沿用 ios27Dark 材质压暗，但把霜化不透明度从 0.85 减到 0.55，
+        // 让深色玻璃也不至于糊成实心面板。
+        settings: isDark
+            ? LiquidGlassSettings.ios27Dark.copyWith(frostOpacity: 0.55)
+            : LiquidGlassSettings(
+                thickness: 30,
+                blur: 3,
+                chromaticAberration: 0.3,
+                lightIntensity: 0.6,
+                refractiveIndex: 1.59,
+                saturation: 0.7,
+                ambientStrength: 1,
+                lightAngle: 0.75 * 3.14159265358979,
+                glassColor: Color(0x24FFFFFF),
+              ),
         indicatorColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
         quality: isPreview ? GlassQuality.minimal : GlassQuality.premium,
         backgroundQuality: isPreview ? GlassQuality.minimal : null,

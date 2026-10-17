@@ -57,6 +57,15 @@ jobs:
       - name: Build Android debug APK
         run: flutter build apk --debug --flavor github
 
+      # fork 专用：把门禁构建出的 debug APK 上传为 artifact，供真机查看效果。
+      # 上游的语义是门禁构建完即丢弃（APK 不作为交付物）；此 job 仅存在于 fork，
+      # 若未来向 upstream 提 PR 需移除本 job。
+      - name: Upload debug APK (fork only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: verifin-debug-apk
+          path: build/app/outputs/flutter-apk/app-github-debug.apk
+
 # 集成测试（integration_test/）刻意不挂在 CI：它们需要真实引擎与真实帧时序，
 # 只能跑在设备或模拟器上。曾试过 android-emulator-runner：
 # 放行 /dev/kvm 后模拟器约 32 秒即可启动，但会在 Gradle 构建期间被系统杀掉

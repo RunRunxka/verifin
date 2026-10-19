@@ -67,6 +67,23 @@ class VeriLiquidGlassRootNavigation extends StatelessWidget {
 
   final VeriRootNavigationSpec spec;
 
+  /// 深色底栏的磨砂材质。
+  ///
+  /// `ios27Dark` 的 12% 白色 tint 会让底栏发灰发白，1.4 的饱和度还会
+  /// 放大后方页面的蓝色。这里压低白色 tint 与饱和度，仅保留轻量模糊，
+  /// 用很弱的黑色 backer 压住高光，同时维持玻璃边缘和选中态。
+  static final LiquidGlassSettings _darkSettings = LiquidGlassSettings.ios27Dark
+      .copyWith(
+        glassColor: const Color(0x00000000),
+        blur: 2,
+        frost: 4,
+        frostOpacity: 0.68,
+        frostClamp: -0.3,
+        saturation: 0.65,
+        bodyShade: 0.18,
+        backerColor: const Color(0x12000000),
+      );
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -115,13 +132,10 @@ class VeriLiquidGlassRootNavigation extends StatelessWidget {
         selectedLabelColor: scheme.primary,
         unselectedLabelColor: veriNavigationUnselected,
         adaptiveBrightness: false,
-        // 观感取舍（真机两轮反馈迭代）：第一轮（浅 14% 白/深霜 0.55）太透，
-        // 底栏标签被透上来的内容干扰；第二轮把浅色 blur 提到 5 反而更糊。
-        // 第三轮方向改为"回到库默认实感、只做温和去饱和"：
-        // 浅色恢复库默认 blur 3 与 saturation 0.7，白底从 24% 只降到 21%；
-        // 深色霜化回到 0.85 原值——可读性优先，透明度只保留很小幅度。
+        // 浅色模式保留 fork 的温和去饱和材质（白底 21%、blur 3）；
+        // 深色模式采用上游压暗、低白雾的磨砂材质 `_darkSettings`。
         settings: isDark
-            ? LiquidGlassSettings.ios27Dark
+            ? _darkSettings
             : LiquidGlassSettings(
                 thickness: 30,
                 blur: 3,

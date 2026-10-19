@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart' show sha1;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verifin/app/credits.dart';
@@ -68,6 +69,21 @@ void main() {
   });
 
   group('名单分组', () {
+    testWidgets('提供真实头像的支持者使用随包发布的头像资源', (tester) async {
+      const avatars = <String, String>{
+        'Rise0223': 'assets/credits/rise0223.png',
+        '懒得不想玩': 'assets/credits/landebuxiangwan.jpg',
+      };
+      for (final entry in avatars.entries) {
+        final supporter = creditsSupporters.singleWhere(
+          (supporter) => supporter.name == entry.key,
+        );
+        expect(supporter.avatarAsset, entry.value);
+        final avatar = await rootBundle.load(supporter.avatarAsset!);
+        expect(avatar.lengthInBytes, greaterThan(0));
+      }
+    });
+
     test('默认组不产生组标题，且保持传入顺序', () {
       final groups = creditsGroups(
         supporters: const <CreditsSupporter>[

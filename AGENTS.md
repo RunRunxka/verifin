@@ -4,11 +4,13 @@
 
 发布包外观：已评审的统一排版（16dp 有效页边距、56dp Header、16dp 卡片圆角、14/12 卡片内边距）是当前**唯一**外观，本地构建与发布包一致，不再有需要对齐的构建参数。CI 固定 Flutter 3.47.2；正式包由 CI 构建，须用户明确授权发版，禁止要求清除应用数据。
 
-界面调整必读 [统一设计与交互规范](docs/design/design-system.md)：集中记录布局、表面材质、设置持久化与验收约定。候选统一排版覆盖全部页面；导航静止必须显示实时文字，预算环禁止内外白线。
+界面调整必读 [统一设计与交互规范](docs/design/design-system.md)：集中记录布局、表面材质、设置持久化与验收约定。统一排版覆盖全部页面；导航静止必须显示实时文字，预算环禁止内外白线。
 
 ## 文档作用与工作语言
 
 本文件是仓库内 Agent 与贡献者的执行规范。Veri Fin 是一个仅交付 Android 的 Flutter 记账应用：Dart 包名为 `verifin`，Android applicationId 为 `top.talyra42.verifin`。
+
+本仓库不启用 GitHub Pull Requests，不接受外部 PR。外部反馈只通过 Issue；代码改动由维护者在 Issue 确认范围后直接实施。
 
 ### 已确认的 Code Review 取舍
 
@@ -35,6 +37,7 @@
 - `docs/dev/tech-decisions.md`：数据口径、备份范围和关键技术取舍；判断当前实现仍以源码、测试与工作流为准。
 - `docs/dev/known-limitations.md`：已接受的限制与技术债及触发整改的阈值。
 - `docs/dev/ai-tools.md`：AI 账目查询工具的注册和维护约定。
+- `docs/dev/ai-provider-presets.md`：AI 渠道预设、模型发现、空 Key 与渠道切换的当前实现和验收边界。
 - `docs/dev/category-budget-override.md`：分类默认预算与单期覆盖的职责与验收范围。
 - `docs/dev/multi-currency.md`：多币种、离线汇率、跨币种交易/退款与迁移的当前依据。
 - `docs/dev/refund.md`：退款（关联条目、待到账/已到账、多币种冲减）的当前口径。
@@ -95,7 +98,7 @@
 
 ```bash
 flutter pub get
-flutter run -d <android-device-id> --flavor github
+flutter run -d <android-device-id> --flavor diagnostic
 flutter analyze
 flutter test
 flutter test test/entries_test.dart
@@ -106,20 +109,20 @@ dart format .
 手机开发前先按 `docs/dev/android-development.md` 检测 Flutter（与 CI 固定版本一致）、Java、Android SDK 与 adb。
 **当前环境缺工具时，必须自动尝试从官方来源安装/补齐并复检；不能仅报告“没有环境”。**
 优先复用已安装版本，不覆盖其他项目的 SDK 或签名；权限、下载或手机授权实际受阻时才请求用户处理。
-默认使用独立 `diagnostic` flavor 运行正式入口做 hot reload 和 release/R8 验收，避免覆盖用户账目。
+日常调试使用独立 `diagnostic` flavor 运行正式入口做 hot reload，避免覆盖用户账目。
 不再维护 Web 预览、WASM 或浏览器测试；不要创建独立演示 UI。布局测试保留 393×852 与窄屏尺寸，
 视觉迭代保留首页预算圆环、支出/剩余日均、概览指标方块和“我的”四列宫格。
 
-- Android 运行/构建仍必须显式使用 `--flavor github`；验证 Play 时使用 `--flavor play --dart-define=SELF_UPDATE=false`。桌面 widget 测试不能替代 Android 原生能力、生命周期和性能验收。
-- 图形故障隔离是例外：仅本地使用独立 applicationId 的 `--flavor diagnostic`，可运行最小绘制入口或正式 `lib/main.dart` 验收，不能当作交付物。
+- 本地日常运行使用 `--flavor diagnostic`；验证 GitHub 渠道、自更新或正式包外观时使用 `--flavor github`；验证 Play 渠道时使用 `--flavor play --dart-define=SELF_UPDATE=false`。所有构建都显式带 flavor。桌面 widget 测试不能替代 Android 原生能力、生命周期和性能验收。
+- `diagnostic` 使用独立 applicationId 与正式数据隔离；它可以运行 `lib/main.dart` 或最小绘制入口，但不能当作交付物。
 - 提交前执行 `dart format .`、`flutter analyze` 和 `flutter test`。只改文档时至少做 diff/链接/路径校验，可不运行 Flutter 测试，但要在汇报中说明。
 - 不把本地 `flutter build apk` 当成交付依据；正式 APK/AAB 由 GitHub Actions 构建。
 
 ### CI 与发布
 
-- `.github/workflows/ci.yml` 在每个 PR 和每次 push 到 `main` 时执行格式检查、analyze、全量测试和 `github` flavor Android debug APK 编译门禁；该 APK 只用于提前发现 Kotlin/Manifest/原生桥编译错误，不作为交付物。
+- `.github/workflows/ci.yml` 在每次 push 到 `main` 时执行格式检查、analyze、全量测试和 `github` flavor Android debug APK 编译门禁；该 APK 只用于提前发现 Kotlin/Manifest/原生桥编译错误，不作为交付物。
 - `.github/workflows/flutter.yml` 只在推送 `vX.Y.Z` 标签时触发发布构建：
-  - GitHub 自分发：arm64-v8a APK，`--flavor github`。
+  - GitHub 自分发：arm64-v8a APK，`--flavor github --split-per-abi`；必须保持 `force-version-code-ignoring-abi=true`，否则 ABI 版本号偏移会破坏 GitHub / Play 渠道间的覆盖升级。
   - Google Play：AAB，`--flavor play --dart-define=SELF_UPDATE=false`。
 - 两种 release 都开启 R8 代码压缩与资源裁剪。新增依赖若使用反射，必须同步检查 `android/app/proguard-rules.pro`；OCR、通知等问题可能只在 release/R8 下暴露。
 - `play` flavor 移除 `REQUEST_INSTALL_PACKAGES` 和 `USE_EXACT_ALARM`，保留可申请的 `SCHEDULE_EXACT_ALARM` 并在无授权时回退；自更新入口通过 `kSelfUpdateEnabled` 隐藏。渠道差异放在 flavor Manifest 或构建开关中表达。
@@ -138,7 +141,7 @@ dart format .
 
 **Release 标题与说明（规范）：**
 
-- **标题固定等于标签名**：`vX.Y.Z`，不加「· 中文摘要」之类后缀。CI 建预发布时用的就是标签名，提升为正式版时不要再改标题（历史上有过带后缀的标题，不再沿用）。
+- **标题固定等于标签名**：`vX.Y.Z`，不加中文摘要等后缀。CI 建预发布时使用标签名，提升为正式版时不再改标题。
 - **说明正文由 `CHANGELOG.md` 的对应版本段落自动生成**，模板在 `.github/workflows/flutter.yml` 的 `Compose release notes` 步骤里，只补固定文案：预发布时期的验收提示、「直接覆盖安装 + 更新前先备份」提示。
 - **不写安装包自身的说明**：架构 / ABI / 体积 / 机型限制属于构建与分发口径，只记在 `README.md` 与 `docs/dev/tech-decisions.md`，不进 Release 说明。
 - 提升为正式版：`gh release edit vX.Y.Z --prerelease=false --latest`（不动 git 标签与附件），完成后回读 `gh release view` / `gh release list` 确认 `isPrerelease=false` 且 Latest 已指向它。
@@ -148,7 +151,6 @@ dart format .
 - GitHub Releases 只保留**正式版**（推荐 Latest 指向最新正式版）；预发布只是「待真机验收」的临时状态，验收通过就应该提升为正式版，而不是长期留存。
 - **git 标签是版本源码的唯一归档**：即使清掉了某个预发布的 Release 页面，也不要删除它的标签——发布脚本会拒绝复用已存在的标签，标签也是旧版本唯一的源码定位方式。Release 页面可以删，标签不要删。
 - 清理命令：`dart run scripts/prune_prereleases.dart --dry-run` 先核对列表，再去掉 `--dry-run` 执行（默认保留 git 标签）。只有在确认某个标签确实不再需要时才加 `--cleanup-tag`。
-- 当前仓库历史上堆积过 80+ 个未被提升的预发布，已按上述规则清理过一次。
 
 ### 仓库脚本
 
@@ -179,7 +181,7 @@ dart format .
 
 ### 弹窗与输入
 
-- 页面不得裸写 `showModalBottomSheet`；由顶层 `show<名>Sheet` helper 统一封装 chrome。确认框用 `showConfirmDialog`，文本输入用 `showTextInputDialog`；2–8 项静态受控单选用 `VeriAnchoredChoice<T>`，动态、较长或需分区的简单单选用 `showOptionSheet`；金额用数字键盘，分类/账户用各自选择器。
+- 页面不得裸写 `showModalBottomSheet`；由顶层 `show<名>Sheet` helper 统一封装 chrome。确认框用 `showConfirmDialog`，文本输入用 `showTextInputDialog`；2–8 项静态受控单选用外部库的 `AnchoredMenuChoice<T>`，动态、较长或需分区的简单单选用 `showOptionSheet`；金额用数字键盘，分类/账户用各自选择器。
 - 禁止复制内联两按钮 `AlertDialog`。破坏性确认使用 `showConfirmDialog(..., destructive: true)`。
 - 取消/未选统一返回 `null`；“全部”“顶级”“无账户”等特殊选项使用集中定义、带注释的命名哨兵，不在调用点散写魔法字符串或 id。
 - 新增 helper 必须把 `BuildContext` 设计为具名 `context:`；改造既有 helper 时若迁移签名，必须同步全部调用点。不要声称现有 helper 已全部完成统一。
@@ -249,12 +251,16 @@ dart format .
 
 ## 文档、CHANGELOG 与交付
 
-- 每次修改代码、功能、配置或流程，都检查 `README.md`、`AGENTS.md`、`CLAUDE.md` 和 `docs/` 是否需要同步；影响命令、架构、交付、配置、数据口径或用户行为时，必须在同一次变更中更新相关文档。
-- 新增/改名共享组件更新 `docs/design/components.md`；改变关键取舍更新 `docs/dev/tech-decisions.md`；新增已接受限制或调整阈值更新 `docs/dev/known-limitations.md`；AI 查询工具更新 `docs/dev/ai-tools.md`。
-- 用户可见的新功能、交互变化、修复、隐私或安全变化要写入 `CHANGELOG.md` 顶部 `## [Unreleased]` 的对应小节。纯内部重构、测试或文档改动不写 CHANGELOG。
-- UI 变化影响公开截图时检查 `docs/screenshots/`；功能完成标准变化时检查验收清单。
+文档所有权按角色区分：
+
+- `README.md`、`AGENTS.md`、`CLAUDE.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/` 与 `.github/` 下的模板/工作流由维护者维护。外部贡献只通过 Issue 提交需求、复现与使用反馈；代码改动由维护者在确认范围后直接实施，不接受外部代码补丁。
+- 外部贡献不得借需求讨论修改治理或技术决策文档。涉及新依赖、全局架构、设计系统、发布流程或数据口径的方案，先通过 Issue 取得维护者确认；功能建议本身不构成实施授权。
+- 维护者和直接在仓库内工作的 Agent 仍须在代码、功能、配置或流程变更的同一提交中校准 `README.md`、`AGENTS.md`、`CLAUDE.md` 与 `docs/`，并按下列职责同步对应登记表。
+- 新增/改名共享组件由维护者更新 `docs/design/components.md`；改变关键取舍由维护者更新 `docs/dev/tech-decisions.md`；新增已接受限制或调整阈值由维护者更新 `docs/dev/known-limitations.md`；AI 查询工具由维护者更新 `docs/dev/ai-tools.md`；AI 渠道与模型发现由维护者更新 `docs/dev/ai-provider-presets.md`。
+- 用户可见的新功能、交互变化、修复、隐私或安全变化由维护者在实现或发版时写入 `CHANGELOG.md` 顶部 `## [Unreleased]` 的对应小节。纯内部重构、测试或文档改动不写 CHANGELOG。
+- UI 变化影响公开截图时由维护者检查 `docs/screenshots/`；功能完成标准变化时由维护者检查验收清单。
 - 提交信息使用简短明确的 `type: summary`，如 `feat: add login screen`、`fix: correct counter test`。提交中不得出现 `Generated by`、`Co-authored-by` 等任何 AI/Codex 署名。
-- 完成相对独立的功能并通过相应验证后及时提交，避免把多个已完成功能长期堆在工作区；不自行推送或发版。PR 说明变更、动机、测试结果、关联 issue，UI 改动附截图或录屏。
+- 完成相对独立的功能并通过相应验证后及时提交，避免把多个已完成功能长期堆在工作区；不自行推送或发版。交付说明应包含变更、动机、测试结果、关联 Issue；UI 改动附截图或录屏。
 
 ## 完成前检查清单
 
@@ -264,4 +270,4 @@ dart format .
 - 新文案是否完成中英文 ARB；新 UI 是否符合页面骨架、设计令牌、弹窗和图标规范？
 - 异常是否有 AppLogger 记录与用户反馈，异步 context 是否有 mounted 守卫？
 - 是否补了针对性测试，并执行了与风险相称的 format/analyze/test/真机验证？
-- 是否同步文档与 `CHANGELOG.md`（若用户可见）并在汇报中列出已运行和未运行的验证？
+- 维护者/Agent 是否同步文档与 `CHANGELOG.md`（若用户可见），并在汇报中列出已运行和未运行的验证？

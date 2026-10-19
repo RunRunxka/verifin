@@ -1,6 +1,6 @@
 /// Android MethodChannel 桥（channel：`verifin/app`）。
 ///
-/// 出站能力（Flutter → 原生）按域拆分为四个 Bridge 类，各在自己的 part 文件里、
+/// 出站能力（Flutter → 原生）按域拆分为五个 Bridge 类，各在自己的 part 文件里、
 /// 互不相干，新增原生能力放进对应域（或新开一个 part），不要再堆回一个类：
 /// - [AppCaptureBridge]（platform_bridge_capture.dart）：快速记账磁贴入口、
 ///   分享/外部采集内容消费；
@@ -10,6 +10,8 @@
 ///   实例计数与点击路由；
 /// - [AppStorageBridge]（platform_bridge_storage.dart）：系统下载目录写出、
 ///   备份目录 SAF 读写；
+/// - [AppGlassBridge]（platform_bridge_glass.dart）：原生液态玻璃底栏的安装、
+///   几何/外观/选中态同步与入站切页回调；
 /// - [AppSecurityBridge]（本文件）：FLAG_SECURE 防截屏。
 ///
 /// 入站调用（原生 → Flutter）受「一个 channel 只能挂一个 MethodCall 处理器」
@@ -32,7 +34,15 @@ const MethodChannel _channel = MethodChannel('verifin/app');
 void _ensureInboundDispatcher() {
   _channel.setMethodCallHandler((call) async {
     if (call.method == 'openQuickEntry') {
-      await _quickEntryHandler?.call();
+      final handler = _quickEntryHandler;
+      if (handler == null) {
+        // Native keeps the pending flag until Shell mounts and consumes it.
+        return;
+      }
+      // Consume before opening the UI so a process restart while the editor is
+      // open cannot replay the same quick-entry intent on next launch.
+      await AppCaptureBridge.consumeInitialQuickEntryIntent();
+      await handler();
       return;
     }
     if (call.method == 'openSharedCapture') {
@@ -52,7 +62,15 @@ void _ensureInboundDispatcher() {
       final args = Map<String, Object?>.from(
         call.arguments as Map<dynamic, dynamic>? ?? <dynamic, dynamic>{},
       );
-      await AppWidgetBridge.handleRoute(args);
+      if (!AppWidgetBridge.hasRouteHandler) {
+        // Native keeps the pending route until Shell consumes it after the
+        // consent/onboarding/app-lock gates become ready.
+        return;
+      }
+      // Use the natively stored value as the single source of truth and clear
+      // it atomically before navigating, avoiding duplicate route delivery.
+      final route = await AppWidgetBridge.consumeInitialRoute() ?? args;
+      await AppWidgetBridge.handleRoute(route);
     }
     if (call.method == 'onLiquidGlassTabSelected') {
       final args = Map<String, Object?>.from(

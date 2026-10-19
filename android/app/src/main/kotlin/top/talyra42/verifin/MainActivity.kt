@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.StatFs
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.provider.Settings
@@ -53,6 +54,9 @@ class MainActivity : FlutterFragmentActivity() {
         rememberWidgetRouteIntent(intent)
         rememberCaptureIntent(intent)
         super.onCreate(savedInstanceState)
+        if (AppLockPreferences.isEnabled(this)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
 
     /// 液态玻璃底栏要求 Flutter 像素进入 HWUI 硬件画布，
@@ -142,6 +146,15 @@ class MainActivity : FlutterFragmentActivity() {
                     call.argument<String>("path") ?: "",
                     result,
                 )
+                "availableBytes" -> {
+                    val path = call.argument<String>("path") ?: ""
+                    val available = try {
+                        StatFs(File(path).absolutePath).availableBytes
+                    } catch (_: Exception) {
+                        null
+                    }
+                    result.success(available)
+                }
                 "listBackupFiles" -> listBackupFiles(
                     call.argument<String>("directoryUri") ?: "",
                     result,
@@ -240,18 +253,18 @@ class MainActivity : FlutterFragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.action == ACTION_QUICK_ENTRY) {
-            if (channel == null) {
-                pendingQuickEntryIntent = true
-            } else {
-                channel?.invokeMethod("openQuickEntry", null)
-            }
+            // Keep the event pending until Dart acknowledges it. The shell may
+            // not be mounted yet (consent/onboarding/app lock), in which case
+            // the inbound method call has no registered handler and must not
+            // consume the one-shot entry.
+            pendingQuickEntryIntent = true
+            channel?.invokeMethod("openQuickEntry", null)
         }
         if (isWidgetRouteIntent(intent)) {
             rememberWidgetRouteIntent(intent)
-            if (channel != null) {
-                channel?.invokeMethod("openWidgetRoute", pendingWidgetRoute)
-                pendingWidgetRoute = null
-            }
+            // Same one-shot rule as quick entry: only the Dart dispatcher that
+            // actually has a shell route handler consumes this value.
+            channel?.invokeMethod("openWidgetRoute", pendingWidgetRoute)
         }
         if (intent.action == ACTION_CAPTURE_IMAGE || intent.action == ACTION_CAPTURE_TEXT) {
             rememberCaptureIntent(intent)

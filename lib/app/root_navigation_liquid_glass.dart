@@ -5,6 +5,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import 'app_lock_session.dart';
 import 'liquid_glass_icon_raster.dart';
 import 'liquid_glass_lens.dart';
 import 'liquid_glass_material.dart';
@@ -161,6 +162,10 @@ class _VeriLiquidGlassRootNavigationState
   double? _lastBottomInset;
   Route<void>? _observedRoute;
 
+  /// 应用锁是否显示。原生栏挂在 Activity 层，应用锁用 `Offstage` 盖住页面时
+  /// `ModalRoute.isCurrent` 仍为 true，必须单独隐藏原生栏。
+  bool _appLocked = false;
+
   /// 当前主题的亮度与主题主色变体，原生栏的配色与此一一对应。
   ({bool dark, int accentOverLight, int accentOverDark}) _appearance() {
     final theme = Theme.of(context);
@@ -175,6 +180,8 @@ class _VeriLiquidGlassRootNavigationState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 订阅应用锁状态；锁屏/解锁都会触发本回调。
+    _appLocked = AppLockSessionScope.isLocked(context);
     if (!_probedNative) {
       _probedNative = true;
       unawaited(_probeNativeBar());
@@ -221,7 +228,9 @@ class _VeriLiquidGlassRootNavigationState
       _observedRoute = route;
       route?.animation?.addStatusListener(_routeStatusListener);
     }
-    unawaited(AppGlassBridge.setHidden(!(route?.isCurrent ?? false)));
+    unawaited(
+      AppGlassBridge.setHidden(_appLocked || !(route?.isCurrent ?? false)),
+    );
   }
 
   void _routeStatusListener(AnimationStatus status) {

@@ -88,9 +88,24 @@
 ---
 
 ### L11 · 鸣谢名单随版本发布，头像依赖一个已停更的上游
-- **现状**：`lib/app/credits.dart` 的鸣谢名单是随包发布的常量，加一位支持者要发一次版；头像在 `lib/app/credits_avatar.dart` 里由 `Jdenticon.toSvg(称呼)` 生成（SHA1 决定图形与色相，再补一层淡彩圆底），算法来自本地 vendor 的 `third_party/jdenticon_dart`。
+- **现状**：`lib/app/credits.dart` 的鸣谢名单是随包发布的常量，加一位支持者要发一次版；未提供真实头像时，`lib/app/credits_avatar.dart` 用 `Jdenticon.toSvg(称呼)` 生成头像（SHA1 决定图形与色相，再补一层淡彩圆底），算法来自本地 vendor 的 `third_party/jdenticon_dart`。提供 `avatarAsset` 时改为渲染 `assets/credits/` 内的包内图片。
 - **为何接受**：名单不联网拉取——应用没有自有服务端，也不该为一张名单开一个网络入口（与「本地优先、无自有服务端」一致）。头像也没有可用的现成库：能按名字生成头像的 pub 包（`multiavatar` / `avatars` / `identicon`）SDK 上限都 <3.0、在当前 Dart 3 上装不上，`boring_avatars` 兼容但采用度极低（2 likes）；`jdenticon_dart` 的算法与 SVG 输出已冻结，但 SDK 上限同样停在 <3.0.0、2021 年后未再发版。因此按「复刻上游到本地」的做法 vendor 一份（只放宽 SDK 约束，MIT 许可与出处见该目录 README）：比自行复刻算法代码量小，图形质量也不必由我们保证。
-- **代价 / 缓解**：上游若有修复不会自动进来，需要时 diff 一次 `third_party/jdenticon_dart/lib/`；名单更新滞后一个版本；改展示名会让头像变化，可用 `seed` 固定。等名单长到需要搜索或分页时再评估展现方式。
+- **代价 / 缓解**：上游若有修复不会自动进来，需要时 diff 一次 `third_party/jdenticon_dart/lib/`；名单更新滞后一个版本；生成头像会随展示名变化，可用 `seed` 固定，真实头像则直接绑定包内资源。等名单长到需要搜索或分页时再评估展现方式。
+
+---
+
+### L12 · Controller、交易详情与 MainActivity 仍然过大
+- **现状**：`veri_fin_controller_ops.dart` 约 5,273 行，`entry_detail_page.dart` 约 2,380 行，
+  `MainActivity.kt` 约 1,514 行。Controller 已按状态/操作拆 part，但操作层仍覆盖交易、账户、
+  分类、预算、导入、备份与应用锁；`MainActivity.kt` 同时承载 SAF、更新下载、截图入口与
+  小组件桥。
+- **影响**：单文件上下文中仍可能出现跨领域修改，代码审查和故障定位成本偏高；当前有
+  repository contract、迁移矩阵、控制器原子命令与平台编译门禁兜底。
+- **为何暂不一次性重写**：这些文件是运行时咽喉点，整块搬迁会在同一变更中混合行为调整与
+  文件移动，难以用现有回归测试证明无行为变化。当前先以“新增领域逻辑不再堆回操作层”为约定。
+- **触发阈值**：新增导入/备份或 Android 原生能力再次修改同一大文件超过 200 行，或出现
+  两个以上跨领域回归时，按领域拆出导入恢复服务、备份传输服务和 Android `UpdateBridge` /
+  `BackupSafBridge`，保持单一 MethodChannel 入口不变。
 
 ---
 

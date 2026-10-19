@@ -1,0 +1,118 @@
+name: Manual Release Build
+
+# 手动为指定分支、标签或提交构建 release 安装包。
+# 只上传 artifact，不创建 GitHub Release；正式发版仍由 flutter.yml 在 v*.*.* 标签触发。
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or SHA to build'
+        required: true
+        default: 'main'
+        type: string
+      target:
+        description: 'Artifact to build'
+        required: true
+        default: 'apk'
+        type: choice
+        options:
+          - apk
+          - both
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build release artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 与 flutter.yml 的发版构建保持一致：github flavor 保留应用内自更新，
+      # arm64 单 ABI，关闭 ABI split 对 versionCode 的偏移。
+      - name: Build release APK (github flavor)
+        if: inputs.target == 'apk' || inputs.target == 'both'
+        env:
+          JAVA_TOOL_OPTIONS: -Dorg.gradle.project.force-version-code-ignoring-abi=true
+        run: flutter build apk --release --target-platform android-arm64 --split-per-abi --flavor github
+
+      - name: Verify release APK
+        if: inputs.target == 'apk' || inputs.target == 'both'
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-arm64-v8a-github-release.apk
+          test -f "$apk"
+          if unzip -l "$apk" | grep -Eq ' lib/(x86_64|armeabi-v7a)/'; then
+            echo "::error::Release APK contains non-arm64 native libraries"
+            exit 1
+          fi
+          if ! unzip -l "$apk" | grep -q ' lib/arm64-v8a/libflutter.so'; then
+            echo "::error::Release APK is missing arm64 Flutter native libraries"
+            exit 1
+          fi
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+          aapt2="$(find "$sdk_root/build-tools" -name aapt2 -type f | sort -V | tail -n 1)"
+          test -n "$aapt2"
+          actual_version_code="$("$aapt2" dump badging "$apk" | sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
+          expected_version_code="$(awk -F+ '/^version: /{gsub(/[[:space:]]/, "", $2); print $2}' pubspec.yaml)"
+          if [ "$actual_version_code" != "$expected_version_code" ]; then
+            echo "::error::Release APK versionCode $actual_version_code does not match pubspec build number $expected_version_code"
+            exit 1
+          fi
+
+      - name: Build release App Bundle (play flavor)
+        if: inputs.target == 'both'
+        run: flutter build appbundle --release --flavor play --dart-define=SELF_UPDATE=false
+
+      - name: Prepare release artifacts
+        shell: bash
+        env:
+          BUILD_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          ref_slug="$(printf '%s' "$BUILD_REF" | tr '/ ' '--')"
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          if [ -f build/app/outputs/flutter-apk/app-arm64-v8a-github-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-github-release.apk \
+              "release-artifacts/verifin-${ref_slug}-${short_sha}-arm64.apk"
+          fi
+          if [ -f build/app/outputs/bundle/playRelease/app-play-release.aab ]; then
+            cp build/app/outputs/bundle/playRelease/app-play-release.aab \
+              "release-artifacts/verifin-${ref_slug}-${short_sha}.aab"
+          fi
+          {
+            echo "## Manual release build"
+            echo
+            echo "- Ref: \`$BUILD_REF\`"
+            echo "- Commit: \`$(git rev-parse HEAD)\`"
+            echo "- Version: \`$(awk -F+ '/^version: /{print $1}' pubspec.yaml)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: verifin-release-${{ github.run_id }}
+          path: release-artifacts/*
+          if-no-files-found: error

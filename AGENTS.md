@@ -2,6 +2,8 @@
 
 材质规范：卡片、导航、快捷按钮、菜单与弹层一律使用**不透明实色**表面，页面背景为单一纯色；界面目标是高效率、干净直接。唯一例外是底部导航的**可选液态玻璃样式**：原生侧实现（QWEA0 `LiquidGlassTabBar`，经 JitPack 引入，MIT）局部化在 `LiquidGlassBarController.kt` 与 MainActivity 的 install/update 通道，Flutter 侧驱动与降级实现局部化在 `root_navigation_liquid_glass.dart`、`liquid_glass_surface.dart`、`liquid_glass_lens.dart`、`liquid_glass_material.dart`、`liquid_glass_icon_raster.dart`、`platform_bridge_glass.dart` 与 `shaders/liquid_glass_bar.frag`、`shaders/liquid_glass_lens.frag`，不得扩散到卡片、菜单、弹层或页面背景；原生栏不可用（非 Android、SDK<33、初始化失败）或透镜着色器不可用时降级为不含折射的玻璃面板。为此整个应用以 `RenderMode.texture`（FlutterTextureView）呈现，这是 QWEA0 折射采样 Flutter 内容的唯一途径，不可改回 SurfaceView；其余样式与界面禁止引入背景模糊、折射、片元着色器滤镜或整屏渐变。
 
+本仓库是 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 的 fork；`glass` 分支相对上游父项目的差异（原生 QWEA0 替代 vendored `GlassTabBar`、全局 `RenderMode.texture`、fork 专用 CI）见 [README 的「与上游父项目的差异」](README.md#与上游父项目的差异)。
+
 发布包外观：已评审的统一排版（16dp 有效页边距、56dp Header、16dp 卡片圆角、14/12 卡片内边距）是当前**唯一**外观，本地构建与发布包一致，不再有需要对齐的构建参数。CI 固定 Flutter 3.47.2；正式包由 CI 构建，须用户明确授权发版，禁止要求清除应用数据。
 
 界面调整必读 [统一设计与交互规范](docs/design/design-system.md)：集中记录布局、表面材质、设置持久化与验收约定。统一排版覆盖全部页面；导航静止必须显示实时文字，预算环禁止内外白线。

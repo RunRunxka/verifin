@@ -116,7 +116,7 @@ debug 支持 hot reload；最终图形/OCR/插件行为必须另外用 release/R
   真机按其实际逻辑尺寸截图，不能把桌面测试当作原生验收。
 - 材质与导航验收：强停冷启、四页切换、底栏点击/页面滑动/取消、菜单与弹层进出、深浅色、前后台。
   卡片、弹层与默认停靠底栏必须保持不透明实色；作为可选底部导航样式的液态玻璃
-  （原生 QWEA0 `LiquidGlassTabBar` + Flutter fallback，见 `root_navigation_liquid_glass.dart`）是唯一例外。其他位置出现背景模糊、渐变或 Shader 滤镜即为回归。
+  （原生 QWEA0 `LiquidGlassTabBar` + Flutter fallback，见 `root_navigation_liquid_glass.dart`）是唯一例外。本 fork 与上游父项目的差异是上游使用 vendored `GlassTabBar.bottom`，本分支使用原生 QWEA0 + fallback；差异汇总见 [README](../../README.md#与上游父项目的差异)。其他位置出现背景模糊、渐变或 Shader 滤镜即为回归。
 - 提交前 format、analyze、全量测试及发布外观专项；数据库相关改动跑 ffi 持久化/迁移矩阵。
 - 正式 APK/AAB 只由授权后的 CI 发布生成。本地 APK 是诊断证据，不作为正式交付。
 - GitHub 自分发 APK 由 CI 校验：原生库只能包含 `arm64-v8a`，且 `versionCode` 必须与 `pubspec.yaml` 的 build number 一致；ABI 拆分不得恢复默认的 versionCode 偏移，否则 GitHub / Play 渠道间无法正常覆盖升级。

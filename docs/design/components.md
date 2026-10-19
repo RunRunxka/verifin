@@ -20,6 +20,9 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 `VeriCard`（`common_widgets_scaffold.dart`）走 `veriContentSurfaceColor(brightness)` + 圆角 + 细描边；
 页面背景取 `scaffoldBackgroundColor` 的画布纯色；弹层由 `sheets.dart` 的 `_showVeriModalSheet`
 统一为实色表面 + 顶部圆角 + 内置拖拽把手，外部仍使用各领域 `show…Sheet`。
+
+> 本仓库为 fork：`glass` 分支的液态玻璃底栏使用原生 QWEA0 + fallback；上游父项目使用 vendored `GlassTabBar.bottom`。差异汇总见 [README](../../README.md#与上游父项目的差异)。
+
 **除液态玻璃底栏样式外禁止**为了「做质感」引入 `BackdropFilter`、`ImageFilter.blur`、片元着色器滤镜或整屏渐变。
 
 `OnboardingGate`（`onboarding_page.dart`）位于 PrivacyConsentGate / AppLockGate 内部，完成引导前不构建首页。

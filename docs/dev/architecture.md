@@ -24,6 +24,8 @@ Controller 经 repository 写库。`VeriFinController.create()` 是生产初始�
 | 本地调试、发布 | [Android 开发](android-development.md)、`scripts/*.dart`（`dart run scripts/doctor.dart` 环境自检、`publish.dart` 发版、`prune_prereleases.dart` 清理预发布、`clean.dart` 清构建产物） |
 | 第三方 vendor 源码 | `third_party/`：`jdenticon_dart`（上游 SDK 上限过旧，本地复刻一份并只放宽约束）；与上游的差异、许可与同步方式写在目录 README，不要在里面做业务改动。可选液态玻璃底栏的原生依赖经 JitPack 引入，不在 `third_party/` 维护副本 |
 
+> 本仓库为 fork：`glass` 分支的液态玻璃导航使用原生 QWEA0 + Flutter fallback，上游父项目使用 vendored `GlassTabBar.bottom`；其余分层与上游一致。差异汇总见 [README](../../README.md#与上游父项目的差异)。
+
 内存仓储、插件 stub 和 ffi factory 用于测试，不能替代生产持久化。
 
 ## 文档权威顺序

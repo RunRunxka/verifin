@@ -13,6 +13,8 @@
 
 四个根页面使用同一条底部导航，样式经 `VeriRootNavigationStyle` 注册、由 `VeriRootNavigationHost` 渲染。当前默认样式是**停靠式**：整宽、不透明、贴底，条目由自有的 `VeriBottomBar` 绘制（未选中线框图标、选中填充图标，中文标签常显）。选中项用 `colorScheme.primary`（默认 Veri Royal）强调，底栏表面和未选中项保持中性，不给整条导航背景染色。
 
+> 本仓库为 fork：上游父项目的液态玻璃样式使用 vendored `GlassTabBar.bottom`；本分支使用下面的原生 QWEA0 + fallback 双模实现。差异汇总见 [README](../../README.md#与上游父项目的差异)。
+
 第二个已注册样式是**液态玻璃**，双模实现：
 
 - **原生模式**（Android 13+，真机）：玻璃、折射、色散、水滴、tab 条目与拖拽全部由原生 QWEA0 `LiquidGlassTabBar` 绘制（`LiquidGlassBarController.kt`，同一条 AGSL 渲染管线）；Flutter 侧只渲染几何占位并经 `AppGlassBridge` 驱动原生栏、同步选中态。条目图标由 Flutter 光栅化为白色剪影（`VeriGlassIconRaster`）交原生 `imageTintList` 上色，玻璃底色与水滴仍由库驱动、保持库的默认外观；**选中项的图标与文字用主题主色**（`veriLiquidGlassAccentPair` 由主色只沿明度派生浅底、深底两档，各档对画布达到 4.5:1，色相不变），**未选中项**用中性墨色（浅底 70% 黑、深底 85% 白，由原生逐项覆写——库给未选中项的白字在浅色玻璃上几乎看不见）。两档按**主题亮度**选用：库的 `BackdropLuminanceMeter` 在 `RenderMode.texture` 下取不到内容（实测平滑亮度衰减到 0、`isOverLight()` 从不翻转），不能用于决定极性。主题切换或换主题色时经 `updateLiquidGlassAppearance` 同步。**整个应用因此以 `RenderMode.texture`（FlutterTextureView）呈现**——这是原生玻璃能采样到 Flutter 内容的唯一途径，不得改回 SurfaceView。键盘弹出时以 `viewInsets.bottom` 下发原生栏避让。

@@ -45,6 +45,8 @@
 | 菜单 / 弹层 | 实色面板（`veriSurfaceLight` / `veriSurfaceAltDark`）+ 圆角描边；进出为淡入淡出 + 0.96→1 缩放 |
 | 预算圆环 | `VeriBudgetRing`（`fl_chart` 环形）；轨底 + 进度弧两段，中心内容由调用方提供。禁止内外白线，比例与颜色固定 |
 
+> 本仓库为 fork：上游父项目的液态玻璃样式使用 vendored `GlassTabBar.bottom`；本分支使用原生 QWEA0 + fallback。差异汇总见 [README](../../README.md#与上游父项目的差异)。
+
 **除液态玻璃底栏样式外禁止**新增 `BackdropFilter`、`ImageFilter.blur`、片元着色器滤镜或整屏渐变背景来「做材质」。需要区分层次时用表面色差、描边和阴影，不靠透明度堆叠。液态玻璃实现必须收敛在样式自有文件、着色器与原生 `LiquidGlassBarController.kt` 内，其他样式不得引用。
 
 页面必须各自拥有不透明背景，`colorScheme.surface` 保持不透明（`test/material_stability_test.dart` 强制）。深色输入框默认无白色描边，以柔和填色区分；聚焦用品牌蓝细边，错误用错误色。

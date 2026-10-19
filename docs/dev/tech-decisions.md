@@ -78,6 +78,10 @@ Veri Fin 关键技术选型与理由。变更相关实现时同步更新本表�
 
 > 锚点菜单使用 pub.dev 的 `anchored_menu 0.1.3`：页面直接导入外部组件，应用不再维护本地实现或包装层；`app_theme.dart` 通过 `AnchoredMenuThemeData` 桥接表面、描边、选中色、圆角和最小宽度。具体约定见 [anchored-menu.md](anchored-menu.md)。
 
+## 与上游父项目的差异
+
+本仓库是 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 的 fork。`glass` 分支在同步上游 `1.20.10+180` 后，把可选液态玻璃底栏从上游的本地 vendor `liquid_glass_widgets` / `GlassTabBar.bottom` 改为原生 QWEA0 `LiquidGlassTabBar` + 应用内 fallback；整个应用因此使用 `RenderMode.texture`，并移除 `third_party/liquid_glass_widgets`。上游的官方发布与文档仍以父仓库为准；本分支只改变玻璃底栏及其渲染/依赖，其余账目、备份、AI、应用锁等功能与上游保持同步。
+
 ## 备份数据范围（哪些进入备份 payload / 哪些仅设备本地）
 
 **导出/导入必须与此表保持一致**（`exportDataJson`/`importDataJson`）。改动任一偏好的归属时同步更新这里与 `README.md`。

@@ -39,6 +39,8 @@
 
 Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没有自有服务端、没有广告，也不接入行为遥测。账本保存在你的设备上；只有你主动使用导出、WebDAV 备份或 AI 功能时，相关数据才会发送到你选择的目标。
 
+> **fork 说明**：本仓库是 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 的 fork。当前 `glass` 分支在同步上游 `1.20.10+180` 的基础上，把可选液态玻璃底栏替换为原生 QWEA0 实现；完整差异见[与上游父项目的差异](#与上游父项目的差异)。上游的官方发布与问题反馈仍以父仓库为准。
+
 ## 界面预览
 
 <div align="center">
@@ -70,6 +72,18 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 | 备份与安全 | AES-GCM + PBKDF2、流式 ZIP、WebDAV、Android SAF |
 | AI 与 OCR | OpenAI 兼容端点、原生 Tool Calls、端上 ML Kit OCR |
 | Android 集成 | Jetpack Glance 小组件、本地通知、快捷磁贴、MethodChannel |
+
+## 与上游父项目的差异
+
+本仓库是 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 的 fork，`glass` 分支保留上游全部功能，并在以下方面与父项目不同：
+
+- **液态玻璃底栏**：上游使用本地 vendor 的 `liquid_glass_widgets`（`GlassTabBar.bottom`）；本分支改用 Android 13+ 原生 QWEA0 `LiquidGlassTabBar`（JitPack），Flutter 侧只保留几何占位，Android 13 以下或原生初始化失败时回退到应用内着色器玻璃面板。
+- **渲染模式**：原生玻璃需要采样 Flutter 像素，因此整个应用使用 `RenderMode.texture`（FlutterTextureView）；上游没有该覆写，默认使用 SurfaceView。
+- **依赖与源码**：本分支删除 `third_party/liquid_glass_widgets`，新增 `LiquidGlassBarController.kt`、`platform_bridge_glass.dart`、`liquid_glass_*` 与两个片元着色器；JitPack 依赖固定为 `com.github.QWEA0:liquidglass:90f4ea28e3`。
+- **CI**：保留 fork 专用的 debug APK artifact，并新增 `.github/workflows/release-build.yml` 手动 release 构建；上游正式发版仍由 `v*.*.*` 标签触发。
+- **文档**：本分支的 `AGENTS.md`、设计文档与技术决策按原生实现描述；上游对应文档描述 vendored `GlassTabBar`。
+
+除上述差异外，账目、备份、AI、应用锁等功能与上游保持同步。上游的官方安装包、问题反馈和发布说明以 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 为准；本 fork 的 CI 产物不是上游正式发行版。
 
 ## 下载
 

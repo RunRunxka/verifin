@@ -32,6 +32,10 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 （分享、快捷记账、小组件路由）的统一排队点。
 `AppLockScreen` 支持可选 `config`，供独立小组件配置引擎在读取账本前完成 PIN/图案验证。
 
+`WidgetRefreshScope`（`app/widgets/widget_refresh_scope.dart`）把桌面投影的刷新协调器暴露给页面层，
+只服务**退出路径**：Shell 在 `SystemNavigator.pop()` 之前等一次 `flush()`，避免引擎随 Activity
+关闭而掐断未完成的发布（详见 [home-widgets.md](../dev/home-widgets.md)「刷新管线」）。
+
 公共骨架只有一套已评审密度：16dp **有效**页边距（页面容器写 14dp，`VeriPage` 再补 2dp）、
 56dp Header 最小高度、16dp 卡片圆角，`VeriCard` 默认内边距横向 14dp、纵向 12dp。
 `VeriCard.padding` 显式传入时优先。`compact` 是分段控件等局部交互组件的尺寸参数，不是页面级构建开关。
@@ -134,7 +138,7 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 | `EntryTagField` | Widget | `common_widgets.dart` | 记账表单标签行 |
 | `AttachmentsEditor` | Widget | `attachments_editor.dart` | 多图片附件横向缩略图、全屏查看和逐张删除；默认自带标题与拍照/相册添加入口，记账页的轻量元数据布局通过 `showHeader:false` / `showAddButton:false` 只复用缩略图条，添加入口由页面标签触发 |
 | `TagSelectorSheet` / `pickEntryTags` | Widget / Sheet 函数 | `entry_sheets.dart` / `sheets.dart` | 交易标签多选（即时新建）/ 接 controller 的弹窗封装。**标签同样是账本内数据**（`Tag.bookId`）：列表取 `controller.tags`（当前账本），跨账本数据用 `tagsForBook(bookId)` |
-| `RefundSection` / `showRefundSheet` | Widget / Sheet 函数 | `refund_editor.dart` | 支出详情页的受控「退款」草稿区（列退款明细+净支出+添加）/ 添加·编辑退款弹窗（金额截剩余可退、到账账户、已到账开关+到账日期、发起日期、备注、删除）；Sheet 保存只回传父交易草稿，交易页最终与本体、附件原子保存。待退款清单独立编辑时由调用方在 Sheet 确认后提交 |
+| `RefundSection` / `showRefundSheet` | Widget / Sheet 函数 | `refund_editor.dart` | 支出详情页的受控「退款」草稿区（列退款明细+净支出+添加）/ 添加·编辑退款弹窗（金额截剩余可退、到账账户、已到账开关+到账日期、发起日期、备注、删除）；默认剩余可退金额按原币 minor unit 归一化；Sheet 保存只回传父交易草稿，交易页最终与本体、附件原子保存。待退款清单独立编辑时由调用方在 Sheet 确认后提交 |
 | `PendingRefundsPage` | Widget | `pending_refunds_page.dart` | 「待退款」清单页（汇总当前账本所有待到账退款、一键标记已到账核销）；入口在交易列表页头 |
 
 ## 族 7 — 表单 / 设置行 / 通用列表行
@@ -195,11 +199,12 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 | 模块 | 位置 | 关键函数 |
 |---|---|---|
 | 日历日算术 | `calendar_days.dart`（经 `ledger_math.dart` re-export） | `calendarDaysBetween` `addCalendarDays` `monthIndexOf`（月份序号 `年 × 12 + 月`，判断「哪个月更早」用它；直接比 `DateTime` 会带上「日」）——**「相隔几天」「往后推 N 天」一律走前两个，禁止裸用 `difference().inDays` / `add(Duration(days:))`**：那是绝对时间，跨夏令时会差一小时→错一天（CI 在 UTC 恒绿，只在欧美时区暴露） |
-| 账目数学 | `ledger_math.dart` | `signedAmount` `accountDeltaForEntry` `entryTouchesAccount` `colorForType` `sumByType` `isZeroAmount` `normalizeAmount`（金额按分规整）；`dateOnly` `cumulativeWeekWindowFor` `monthWindowFor` `weekWindowFor` `quarterWindowFor` `quarterOfMonth` `entriesInWindow` `valuesForTypeInWindow` `dayExpenseTotal` `dayBudgetExpenseTotal` `monthlyExpenseValues` `monthlyNetValuesForType`；`DateWindow` |
+| 账目数学 | `ledger_math.dart` | `signedAmount` `accountDeltaForEntry` `entryTouchesAccount` `colorForType` `sumByType` `isZeroAmount` `normalizeAmount`（金额按分规整）；`dateOnly` `cumulativeWeekWindowFor` `monthWindowFor` `weekWindowFor` `quarterWindowFor` `quarterOfMonth` `entriesInWindow` `valuesForTypeInWindow` `dayExpenseTotal` `dayBudgetExpenseTotal` `monthlyExpenseValues` `monthlyNetValuesForType`；`remainingRefundableAmount`（剩余可退，含待到账并按原币 minor unit 归一化）；`DateWindow` |
 | 金额/时间格式化 | `ledger_math.dart` | `formatAmount` `formatExpenseAmount` `formatIncomeAmount` `formatSignedAmount` `formatCompactAmount` `formatTime`（**金额文本只走这些**，勿内联手拼）。`formatExpenseAmount` 与 `formatIncomeAmount` 对称、**只给绝对值**；符号只出现在混合类型列表（`formatSignedAmount` / `formatSignedUserMoney`）和「负值即信息」的剩余/超出（`formatAmount`）——不要写 `formatExpenseAmount(x.abs())` |
 | 全局金额偏好 | `amount_format.dart` | 顶层量 `currencyFractionStyle`（紧凑/货币标准小数位）、`moneyUnitStyle`（符号后置/代码前置）、`hideUnitInSingleCurrency` 与 `activeBookUsesMultipleCurrencies`；**派生闸门 `activeMoneyCodeDisplay`（`none` 即隐藏单位）是唯一判断依据**，`formatUserMoney` 族与 `textCurrencyUnitHidden`（族 5）都读它，界面不要另写判断条件；Controller 单向同步，界面不直接修改顶层状态（`currencyFractionStyle` 落 KV `verifin.currency_fraction_style.v1`，旧的 `verifin.amount_format.v1` 只做一次性读入） |
 | 序列/坐标轴 | `series_math.dart` | `monthAxisLabels` `reportAxisLabels` `isoWeekNumber` `accountBalanceSeries` `accountMonthlyBalanceSeries` `accountMonthlyBalanceSeriesBatch` `monthlyNetAssetSeries` `balanceAxisLabels` `bookkeepingDays` `earliestEntryDate`（最早记账日，期间选择范围的下界） |
 | 统计分析纯函数（看板排行卡与 AI 账目查询工具共用） | `report_analysis.dart` | `reportSummary` `reportMonthlyComparison` `formatChangeRatio` `reportCategoryStats` `reportCategoryStatsByOwn` `reportCategoryChildStats` `reportTagStats` `reportTrend`；`ReportRange` `ReportSummary` `ReportCategoryStat` `ReportTagStat` `ReportTrend` |
+| 交易保存校验反馈 | `entry_save_feedback.dart` | `entrySaveValidationMessage(l10n, code)`——把 `EntryValidationCode` 映射为本地化文案；`invalidAmounts` 使用通用兜底，scope code 提示重新选择分类/标签；交易编辑、交易详情和信用卡还款三个保存入口共用 |
 | 首页指标 | `home_metrics.dart` | `computeHomeMetric` `homeMetricLabel` `homeMetricGroups` `formatHomeMetric` `homeMetricColor`；`HomeMetric` `HomeMetricContext` `HomeTrendConfig` |
 | 周期记账 | `recurring.dart` | `advanceRecurring` `dueDatesFor` |
 | 信用类账户 | `credit_card.dart` | `nextDueDate` `daysUntilDue` `nextStatementDate` `currentBillingCycle` `usedCredit` `availableCredit` `billingCycleExpense`；卡号 `cardLast4Of`（在 `models.dart`） |

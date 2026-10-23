@@ -2558,7 +2558,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not open the browser. Please try again.';
 
   @override
+  String get aboutFontCredit => 'This app uses the MiSans font by Xiaomi.';
+
+  @override
   String get themeMode => 'Theme';
+
+  @override
+  String get themeStyleLabel => 'Theme style';
+
+  @override
+  String get themeStyleVeri => 'Classic';
+
+  @override
+  String get themeStyleMiuix => 'Miuix';
 
   @override
   String get themeColorLabel => 'Theme color';

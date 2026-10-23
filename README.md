@@ -81,6 +81,7 @@ Veri Fin 是一款仅面向 Android 的个人记账应用。没有账号、没�
 - **渲染模式**：原生玻璃需要采样 Flutter 像素，因此整个应用使用 `RenderMode.texture`（FlutterTextureView）；上游没有该覆写，默认使用 SurfaceView。
 - **依赖与源码**：本分支删除 `third_party/liquid_glass_widgets`，新增 `LiquidGlassBarController.kt`、`platform_bridge_glass.dart`、`liquid_glass_*` 与两个片元着色器；JitPack 依赖固定为 `com.github.QWEA0:liquidglass:90f4ea28e3`。
 - **CI**：保留 fork 专用的 debug APK artifact，并新增 `.github/workflows/release-build.yml` 手动 release 构建；上游正式发版仍由 `v*.*.*` 标签触发。
+- **Miuix 主题风格**：外观新增可选的 Miuix（HyperOS）主题风格——独立的中性表面与语义色、固定 HyperOS 蓝、20/28dp 连续曲率圆角和随包的 MiSans 字体（400/600）。这是纯 Flutter `ThemeData` 实现，不引入 Compose/Miuix 运行时；经典风格保持原样。
 - **文档**：本分支的 `AGENTS.md`、设计文档与技术决策按原生实现描述；上游对应文档描述 vendored `GlassTabBar`。
 
 除上述差异外，账目、备份、AI、应用锁等功能与上游保持同步。上游的官方安装包、问题反馈和发布说明以 [LumiDesk/verifin](https://github.com/LumiDesk/verifin) 为准；本 fork 的 CI 产物不是上游正式发行版。

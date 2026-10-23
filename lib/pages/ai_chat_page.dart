@@ -372,8 +372,10 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Container(
         key: const Key('ai_chat_composer'),
         decoration: BoxDecoration(
-          color: veriElevatedSurfaceColor(theme.brightness),
-          borderRadius: BorderRadius.circular(veriRadiusXl),
+          color: veriElevatedSurface(context),
+          borderRadius: BorderRadius.circular(
+            VeriThemeTokens.of(context).panelRadius,
+          ),
           border: Border.all(
             color: borderColor,
             width: _inputFocus.hasFocus ? 1.2 : 1,

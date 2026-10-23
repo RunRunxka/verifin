@@ -130,7 +130,7 @@ class _VeriLiquidGlassLensState extends State<VeriLiquidGlassLens> {
                       key: ValueKey<String>('${widget.keyPrefix}_liquid_lens'),
                       decoration: BoxDecoration(
                         color: highContrast
-                            ? (dark ? veriSurfaceAltDark : veriSurfaceAltLight)
+                            ? veriSubtleSurface(context)
                             : Colors.white.withValues(
                                 alpha: dark
                                     ? 0.10 + activity * 0.10

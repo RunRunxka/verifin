@@ -138,9 +138,16 @@ Color _accentAgainst(
 }
 
 /// 由主题主色派生液态玻璃底栏选中项的两档颜色，与原生栏的采样结果配对使用。
-VeriLiquidGlassAccentPair veriLiquidGlassAccentPair(Color primary) {
+///
+/// 对比度按当前主题风格的真实画布计算：Miuix 的画布不是
+/// [veriCanvasLight] / [veriCanvasDark]。
+VeriLiquidGlassAccentPair veriLiquidGlassAccentPair(
+  Color primary, {
+  Color lightCanvas = veriCanvasLight,
+  Color darkCanvas = veriCanvasDark,
+}) {
   return VeriLiquidGlassAccentPair(
-    overLight: _accentAgainst(primary, veriCanvasLight, towardDark: true),
-    overDark: _accentAgainst(primary, veriCanvasDark, towardDark: false),
+    overLight: _accentAgainst(primary, lightCanvas, towardDark: true),
+    overDark: _accentAgainst(primary, darkCanvas, towardDark: false),
   );
 }

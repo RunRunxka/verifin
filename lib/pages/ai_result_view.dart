@@ -389,8 +389,7 @@ class _TableCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final headerBg = isDark ? veriSurfaceAltDark : veriSurfaceAltLight;
+    final headerBg = veriSubtleSurface(context);
     final divider = theme.colorScheme.onSurface.withValues(alpha: 0.07);
     final headerStyle = theme.textTheme.bodyMedium?.copyWith(
       fontWeight: FontWeight.w700,

@@ -363,22 +363,23 @@ Color homeMetricColor(
   HomeMetric metric,
   double value,
   Color mutedColor,
-  Brightness brightness,
-) {
+  Brightness brightness, [
+  ThemeStylePreference style = ThemeStylePreference.veri,
+]) {
   if (!value.isFinite || isZeroAmount(value)) {
     return mutedColor;
   }
   switch (homeMetricStyle(metric)) {
     case HomeMetricStyle.expense:
-      return veriSemanticFor(brightness, veriExpense);
+      return veriSemanticFor(brightness, veriExpense, style);
     case HomeMetricStyle.income:
-      return veriSemanticFor(brightness, veriIncome);
+      return veriSemanticFor(brightness, veriIncome, style);
     case HomeMetricStyle.signed:
       return value > 0
-          ? veriSemanticFor(brightness, veriIncome)
-          : veriSemanticFor(brightness, veriExpense);
+          ? veriSemanticFor(brightness, veriIncome, style)
+          : veriSemanticFor(brightness, veriExpense, style);
     case HomeMetricStyle.neutral:
-      return veriSemanticFor(brightness, veriBlue);
+      return veriSemanticFor(brightness, veriBlue, style);
   }
 }
 

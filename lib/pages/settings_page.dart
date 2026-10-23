@@ -35,6 +35,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final EditorExitController _exitController = EditorExitController();
   late ThemePreference _initialTheme;
   late ThemePreference _theme;
+  late ThemeStylePreference _initialThemeStyle;
+  late ThemeStylePreference _themeStyle;
   late ThemeColorPreference _initialThemeColor;
   late ThemeColorPreference _themeColor;
   late LocalePreference _initialLocale;
@@ -69,6 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     final controller = VeriFinScope.of(context);
     _initialTheme = _theme = controller.themePreference;
+    _initialThemeStyle = _themeStyle = controller.themeStylePreference;
     _initialThemeColor = _themeColor = controller.themeColorPreference;
     _initialLocale = _locale = controller.localePreference;
     _initialNavigationStyle = _navigationStyle =
@@ -142,36 +145,40 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                       const Divider(height: 1),
-                      AnchoredMenuChoice<ThemeColorMode>(
-                        values: ThemeColorMode.values,
-                        selected: _themeColor.mode,
-                        idOf: (value) => 'settings_theme_color_${value.name}',
-                        labelOf: (value) => switch (value) {
-                          ThemeColorMode.defaultColor => AppLocalizations.of(
-                            context,
-                          ).themeColorDefault,
-                          ThemeColorMode.system => AppLocalizations.of(
-                            context,
-                          ).themeColorSystem,
-                          ThemeColorMode.custom => AppLocalizations.of(
-                            context,
-                          ).themeColorCustom,
-                        },
+                      AnchoredMenuChoice<ThemeStylePreference>(
+                        values: ThemeStylePreference.values,
+                        selected: _themeStyle,
+                        idOf: (value) => 'settings_theme_style_${value.name}',
+                        labelOf: (value) =>
+                            value.label(AppLocalizations.of(context)),
                         iconOf: (value) => switch (value) {
-                          ThemeColorMode.defaultColor => Icons.color_lens,
-                          ThemeColorMode.system => Icons.auto_awesome,
-                          ThemeColorMode.custom => Icons.palette_outlined,
+                          ThemeStylePreference.veri =>
+                            Icons.water_drop_outlined,
+                          ThemeStylePreference.miuix => Icons.smartphone,
                         },
-                        onSelected: (value) => setState(
-                          () => _themeColor = _themeColor.copyWith(mode: value),
-                        ),
+                        onSelected: (value) =>
+                            setState(() => _themeStyle = value),
                         semanticLabel: AppLocalizations.of(
                           context,
-                        ).themeColorLabel,
+                        ).themeStyleLabel,
                         builder: (context, openMenu, menuOpen) => SettingsRow(
-                          icon: Icons.color_lens_outlined,
-                          title: AppLocalizations.of(context).themeColorLabel,
-                          trailing: switch (_themeColor.mode) {
+                          icon: Icons.style_outlined,
+                          title: AppLocalizations.of(context).themeStyleLabel,
+                          trailing: _themeStyle.label(
+                            AppLocalizations.of(context),
+                          ),
+                          trailingIcon: Icons.chevron_right,
+                          onTap: openMenu,
+                        ),
+                      ),
+                      // Miuix 固定使用 HyperOS 蓝，主题色设置只对经典风格生效。
+                      if (_themeStyle == ThemeStylePreference.veri) ...[
+                        const Divider(height: 1),
+                        AnchoredMenuChoice<ThemeColorMode>(
+                          values: ThemeColorMode.values,
+                          selected: _themeColor.mode,
+                          idOf: (value) => 'settings_theme_color_${value.name}',
+                          labelOf: (value) => switch (value) {
                             ThemeColorMode.defaultColor => AppLocalizations.of(
                               context,
                             ).themeColorDefault,
@@ -182,22 +189,50 @@ class _SettingsPageState extends State<SettingsPage> {
                               context,
                             ).themeColorCustom,
                           },
-                          trailingIcon: Icons.chevron_right,
-                          onTap: openMenu,
+                          iconOf: (value) => switch (value) {
+                            ThemeColorMode.defaultColor => Icons.color_lens,
+                            ThemeColorMode.system => Icons.auto_awesome,
+                            ThemeColorMode.custom => Icons.palette_outlined,
+                          },
+                          onSelected: (value) => setState(
+                            () =>
+                                _themeColor = _themeColor.copyWith(mode: value),
+                          ),
+                          semanticLabel: AppLocalizations.of(
+                            context,
+                          ).themeColorLabel,
+                          builder: (context, openMenu, menuOpen) => SettingsRow(
+                            icon: Icons.color_lens_outlined,
+                            title: AppLocalizations.of(context).themeColorLabel,
+                            trailing: switch (_themeColor.mode) {
+                              ThemeColorMode.defaultColor =>
+                                AppLocalizations.of(context).themeColorDefault,
+                              ThemeColorMode.system => AppLocalizations.of(
+                                context,
+                              ).themeColorSystem,
+                              ThemeColorMode.custom => AppLocalizations.of(
+                                context,
+                              ).themeColorCustom,
+                            },
+                            trailingIcon: Icons.chevron_right,
+                            onTap: openMenu,
+                          ),
                         ),
-                      ),
-                      if (_themeColor.mode ==
-                          ThemeColorMode.custom) ...<Widget>[
-                        const Divider(height: 1),
-                        SettingsRow(
-                          key: const ValueKey('settings_theme_color_custom'),
-                          icon: Icons.palette_outlined,
-                          title: AppLocalizations.of(context).themeColorCustom,
-                          trailing: _themeColorHex,
-                          trailingIcon: Icons.chevron_right,
-                          onTap: _editThemeColor,
-                          contentColor: Theme.of(context).colorScheme.primary,
-                        ),
+                        if (_themeColor.mode ==
+                            ThemeColorMode.custom) ...<Widget>[
+                          const Divider(height: 1),
+                          SettingsRow(
+                            key: const ValueKey('settings_theme_color_custom'),
+                            icon: Icons.palette_outlined,
+                            title: AppLocalizations.of(
+                              context,
+                            ).themeColorCustom,
+                            trailing: _themeColorHex,
+                            trailingIcon: Icons.chevron_right,
+                            onTap: _editThemeColor,
+                            contentColor: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
                       ],
                       const Divider(height: 1),
                       SettingsRow(
@@ -538,6 +573,35 @@ class _SettingsPageState extends State<SettingsPage> {
                           );
                         },
                       ),
+                      const Divider(height: 1),
+                      // MiSans 许可要求在使用该字体的软件中注明来源。
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.font_download_outlined,
+                              size: 18,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.of(context).aboutFontCredit,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.62),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -676,6 +740,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   bool get _isDirty =>
       _theme != _initialTheme ||
+      _themeStyle != _initialThemeStyle ||
       _themeColor != _initialThemeColor ||
       _locale != _initialLocale ||
       _navigationStyle != _initialNavigationStyle ||
@@ -693,6 +758,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (await _save() && mounted) {
       setState(() {
         _initialTheme = _theme;
+        _initialThemeStyle = _themeStyle;
         _initialThemeColor = _themeColor;
         _initialLocale = _locale;
         _initialNavigationStyle = _navigationStyle;
@@ -713,6 +779,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<bool> _save() {
     return VeriFinScope.of(context).saveAppPreferencesDraft(
       themePreference: _theme,
+      themeStylePreference: _themeStyle,
       themeColorPreference: _themeColor,
       localePreference: _locale,
       navigationStylePreference: _navigationStyle,

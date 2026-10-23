@@ -67,6 +67,7 @@ Veri Fin 关键技术选型与理由。变更相关实现时同步更新本表�
 | 液态玻璃底栏选中态同步 | 原生栏的选中态以 **Dart 侧当前下标为唯一权威**（`dartSelectedIndex`），库回来的回调只在该值与之不同时才转发给 Dart；不再使用「期望值」标记。**不要改回会滞留的状态标记**：库的 `selectTab(index, changed)` 只在选中值真正变化时才回调，用户点的正好是库已选中那项时库不回调，标记会滞留并吞掉之后对同一项的真实点击（表现为点了没反应、卡在当前页）。同理 `install()` 重装时必须用 Dart 权威下标而非库的旧值作初值 | 早期用一次性标记防回环，触发条件不成立时标记滞留，造成「切主题色后底栏偶尔点不动」；与 Dart 权威值比对没有滞留状态，回声与真实点击都能正确区分 |
 | 液态玻璃切页回调归属 | `AppGlassBridge.onTabSelected` 是静态字段，只能由**真正挂载原生栏的实例**注册与清除。样式选择页的只读预览（`onSelect` 为 null、从不 install）销毁时只能清除**自己注册**的回调，比较用 `==`（方法 tear-off 每次取值都是新闭包，`identical` 恒为 false）。无条件置空会让真实底栏收不到切页请求：水滴照常滑动、页面不切 | 实测复现路径为「已选玻璃样式 → 进入样式选择页 → 返回」，每次必现；日志显示预览实例的销毁把真实实例的回调清空 |
 | 主题色呈现 | 设置页保存 `ThemeColorPreference`：`defaultColor` 保留原有 `veriRoyal` 并作为新安装默认；`system` 使用 Flutter `ThemeData(useSystemColors: true)` 获取 Android 系统动态色，平台不支持时回退默认；`custom` 保存不透明 ARGB 并直接作为 `ColorScheme.primary`。主交互从 `colorScheme.primary` 读取，收入/支出/转账/提醒等语义色不跟随主题色；主题色随现有 `themePreference` 一起进入导出/导入 JSON，旧备份缺字段回退默认 | Material 3 负责配套容器角色；自定义模式仅自动选择 `onPrimary` 黑/白前景以保持可读性，不把用户选中的主色替换成另一种颜色，也不引入全局可变当前颜色 |
+| 主题风格抽头 | 外观偏好新增 `ThemeStylePreference`（`veri` / `miuix`，KV `verifin.theme_style.v1`，默认 `veri`，设备本地不进备份），与 `ThemePreference` 明暗正交。解析后的颜色、圆角与字体集中在 `VeriThemeTokens`（`ThemeExtension`）：Veri 保持原值；Miuix 固定 HyperOS 蓝、独立语义色表、MiSans 字体、20/28dp 圆角。纯取色函数通过 `veriSemanticFor(..., style)` 接收风格，不访问 Controller | 风格是视觉轴而不是第二个明暗轴；用 ThemeExtension 让图表、首页指标、预算等无 context 纯函数保持可单测。Miuix 固定主题色避免自定义色破坏整套 HyperOS 配色；不进备份与导航样式一致。这是 Flutter `ThemeData` 对 Miuix/HyperOS 视觉语言的实现，**不引入 Compose 或 Miuix 运行时** |
 | 汇率显示精度 | 界面 `formatRateValue` 对常见汇率最多显示 4 位小数，小于 0.01/0.0001 时放宽到 6/8 位；数字键盘、模型与 SQLite 仍支持 10 位，CSV 精确导出改用 `formatRateValueExact` | 直接把输入精度当展示精度会产生 `0.138888889` 类似长串；展示舍入与数据精度分离，才能在不破坏往返的前提下提升可读性 |
 | 记账自动识别 | 纯函数 `category_suggest.dart` 的 `suggestEntry` 从用户**本人历史**（同账本、含各类型）按金额接近度 + 备注字符二元组相似度 + 时段加权，取最像的几笔投票推断**类型/分类/标签/备注**；单笔支撑须「强匹配」（金额精确复现或备注重合）才敢翻转类型。记账页逐字段只填「用户尚未改过」的项，静默无提示。设置页「记账」分组有**总开关** `verifin.auto_suggest.v1`（默认开、全局不分账本、进备份、初始化保留），关掉后记账页不再预填任何字段 | 本地优先、无模型/网络、规则透明可测；从「找最像的历史」出发天然覆盖「又输 2.8→带出上次的分类/标签/备注」「0.01 的收入记录→据此推断收入」等诉求；「强匹配才翻类型」避免仅凭松散金额接近误判；不硬编码「小额=收入」之类常识规则，只信用户自己的历史。总开关是因为「字段自己被填上」对部分用户是困惑而非便利，需要一个能彻底关掉的地方，默认开启 |
 | 首页概览卡自定义 | 卡片 5 个标量槽（大数字/结余位/3 小卡片）+ 曲线序列 + 标题都可配；指标计算集中在纯函数 `home_metrics.dart`（`computeHomeMetric` + `HomeMetricContext` 快照，21 个指标各带周期口径与展示风格），配置 `HomeTrendConfig` 存 KV `verifin.home_metrics.v1`（进备份、初始化保留），设置页 `home_metrics_settings_page.dart` 即时保存 + 一键复位 | 指标是无 context 纯函数便于单测、复用 `sumByType`/`accountBalance` 口径与资产页一致；配置与 `fab_action` 等同属显示偏好；标题空回落「概览」。走势窗口用累积展开（`cumulativeWeekWindowFor`，1 号起按 7 天步进到当月），详情页用整月窗口（`monthWindowFor`）配合月份切换 |
@@ -93,7 +94,7 @@ Veri Fin 关键技术选型与理由。变更相关实现时同步更新本表�
 **设备本地、不进备份**（换机需重设）：
 - **机密凭证**（进明文备份是安全倒退，坚决不备）：应用锁哈希 `app_lock`、备份加密口令 `backup_passphrase`、WebDAV 账号密码 `webdav`、AI `apiKey`（含在 `ai`）。
 - **设备专属**：备份目录路径 `backup_settings`、隐私同意 `privacy_consent`、新手引导 `onboarding`、软件日志 `logs`、AI 能力探测缓存 `ai_capabilities`（按 endpoint + model 缓存协议能力，换设备重探即可，没有还原价值）。
-- **设备偏好，维持本地**（语义随设备/换机重设）：语言 `locale`、底部导航样式 `nav_style`、记账提醒 `reminder`、AI 的 baseUrl/model（`ai`）。桌面小组件实例配置按 `appWidgetId` 存在 home_widget 共享存储，同样不进备份。
+- **设备偏好，维持本地**（语义随设备/换机重设）：语言 `locale`、底部导航样式 `nav_style`、主题风格 `theme_style`、记账提醒 `reminder`、AI 的 baseUrl/model（`ai`）。桌面小组件实例配置按 `appWidgetId` 存在 home_widget 共享存储，同样不进备份。
 
 
 ## 账户类型能力矩阵

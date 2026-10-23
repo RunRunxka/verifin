@@ -192,10 +192,10 @@ class _AssetsPageState extends State<AssetsPage> {
             key: const Key('asset_cover_card'),
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: hasAssetCover
-                  ? null
-                  : veriContentSurfaceColor(Theme.of(context).brightness),
-              borderRadius: BorderRadius.circular(veriCardRadius),
+              color: hasAssetCover ? null : veriContentSurface(context),
+              borderRadius: BorderRadius.circular(
+                VeriThemeTokens.of(context).cardRadius,
+              ),
               border: Border.all(
                 color: Theme.of(
                   context,

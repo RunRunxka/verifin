@@ -55,6 +55,31 @@ enum ThemeColorMode {
   );
 }
 
+/// 主题视觉风格：Veri 保持现有设计；Miuix 使用 HyperOS 配色、语义色与 MiSans 字体。
+///
+/// 与 [ThemePreference]（明暗）正交；Miuix 固定使用 HyperOS 蓝，不读取主题色。
+/// 设备本地偏好：不进 JSON 备份，初始化数据时保留。
+enum ThemeStylePreference {
+  veri,
+  miuix;
+
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case ThemeStylePreference.veri:
+        return l10n.themeStyleVeri;
+      case ThemeStylePreference.miuix:
+        return l10n.themeStyleMiuix;
+    }
+  }
+
+  static ThemeStylePreference fromStorage(String? value) {
+    return ThemeStylePreference.values.firstWhere(
+      (preference) => preference.name == value,
+      orElse: () => ThemeStylePreference.veri,
+    );
+  }
+}
+
 /// 设备级主题色偏好。颜色不随亮/暗主题变化，两个主题分别从同一个 seed 生成。
 @immutable
 class ThemeColorPreference {

@@ -4574,11 +4574,35 @@ abstract class AppLocalizations {
   /// **'没能打开浏览器，请稍后再试。'**
   String get creditsOpenFailed;
 
+  /// No description provided for @aboutFontCredit.
+  ///
+  /// In zh, this message translates to:
+  /// **'本应用使用 MiSans 字体（小米科技有限责任公司）。'**
+  String get aboutFontCredit;
+
   /// No description provided for @themeMode.
   ///
   /// In zh, this message translates to:
   /// **'主题模式'**
   String get themeMode;
+
+  /// No description provided for @themeStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题风格'**
+  String get themeStyleLabel;
+
+  /// No description provided for @themeStyleVeri.
+  ///
+  /// In zh, this message translates to:
+  /// **'经典'**
+  String get themeStyleVeri;
+
+  /// No description provided for @themeStyleMiuix.
+  ///
+  /// In zh, this message translates to:
+  /// **'Miuix'**
+  String get themeStyleMiuix;
 
   /// No description provided for @themeColorLabel.
   ///

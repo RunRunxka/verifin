@@ -487,15 +487,16 @@ class _AssetSummaryChartState extends State<_AssetSummaryChart> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final brightness = Theme.of(context).brightness;
+    final style = veriThemeStyleOf(context);
     final neutral = Theme.of(
       context,
     ).colorScheme.onSurface.withValues(alpha: 0.45);
     final colors = <Color>[
       Theme.of(context).colorScheme.primary,
-      veriSemanticFor(brightness, veriBlue),
+      veriSemanticFor(brightness, veriBlue, style),
       veriCyan,
       veriMint,
-      veriSemanticFor(brightness, veriWarning),
+      veriSemanticFor(brightness, veriWarning, style),
       neutral,
     ];
     final limit = _showAll ? widget.holdings.length : 5;

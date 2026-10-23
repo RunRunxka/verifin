@@ -145,6 +145,9 @@ mixin _ControllerState on ChangeNotifier {
 
   late final ValueNotifier<ThemePreference> themePreferenceListenable;
 
+  /// 主题风格（Veri / Miuix）通知器：只重建 `MaterialApp` 的主题子树。
+  late final ValueNotifier<ThemeStylePreference> themeStylePreferenceListenable;
+
   late final ValueNotifier<ThemeColorPreference> themeColorPreferenceListenable;
 
   /// 语言偏好通知器：驱动 `MaterialApp.locale` 即时切换。
@@ -158,6 +161,7 @@ mixin _ControllerState on ChangeNotifier {
   late final ValueNotifier<AiCapabilityProfile?> aiCapabilityListenable;
 
   ThemePreference _themePreference = ThemePreference.system;
+  ThemeStylePreference _themeStylePreference = ThemeStylePreference.veri;
   ThemeColorPreference _themeColorPreference =
       ThemeColorPreference.defaultValue;
   LocalePreference _localePreference = LocalePreference.system;
@@ -245,6 +249,9 @@ mixin _ControllerState on ChangeNotifier {
 
   void _loadPreferences() {
     _themePreference = ThemePreference.fromStorage(_store.read(_themeKey));
+    _themeStylePreference = ThemeStylePreference.fromStorage(
+      _store.read(_themeStyleKey),
+    );
     _themeColorPreference = ThemeColorPreference.fromStorage(
       _store.read(_themeColorKey),
     );

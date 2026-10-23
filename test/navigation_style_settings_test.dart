@@ -51,6 +51,7 @@ void main() {
 
     await controller.saveAppPreferencesDraft(
       themePreference: controller.themePreference,
+      themeStylePreference: controller.themeStylePreference,
       themeColorPreference: controller.themeColorPreference,
       localePreference: controller.localePreference,
       navigationStylePreference: NavigationStylePreference.docked,

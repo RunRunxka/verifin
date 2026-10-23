@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'app_theme.dart';
+import 'models.dart';
 
 enum VeriFeedbackTone { info, success, warning, error }
 
@@ -550,6 +551,7 @@ class _VeriFeedbackCardState extends State<_VeriFeedbackCard>
       request.tone,
       theme.brightness,
       theme.colorScheme.primary,
+      veriThemeStyleOf(context),
     );
     final hasProgress = _lifetimeController != null;
     final hasAction = request.actionLabel != null;
@@ -573,7 +575,7 @@ class _VeriFeedbackCardState extends State<_VeriFeedbackCard>
       countStyle: countStyle,
       actionStyle: actionStyle,
     );
-    final surface = isDark ? veriSurfaceAltDark : veriSurfaceLight;
+    final surface = veriAltSurface(context);
     final outline = (isDark ? Colors.white : veriInk).withValues(
       alpha: isDark ? 0.15 : 0.10,
     );
@@ -877,12 +879,17 @@ void _complete(
   }
 }
 
-Color _toneColor(VeriFeedbackTone tone, Brightness brightness, Color accent) {
+Color _toneColor(
+  VeriFeedbackTone tone,
+  Brightness brightness,
+  Color accent,
+  ThemeStylePreference style,
+) {
   return switch (tone) {
     VeriFeedbackTone.info => accent,
-    VeriFeedbackTone.success => veriSemanticFor(brightness, veriIncome),
-    VeriFeedbackTone.warning => veriSemanticFor(brightness, veriWarning),
-    VeriFeedbackTone.error => veriSemanticFor(brightness, veriExpense),
+    VeriFeedbackTone.success => veriSemanticFor(brightness, veriIncome, style),
+    VeriFeedbackTone.warning => veriSemanticFor(brightness, veriWarning, style),
+    VeriFeedbackTone.error => veriSemanticFor(brightness, veriExpense, style),
   };
 }
 

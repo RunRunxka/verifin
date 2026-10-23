@@ -65,6 +65,7 @@ class _DailyBudgetCard extends StatelessWidget {
       ratio,
       Theme.of(context).brightness,
       Theme.of(context).colorScheme.primary,
+      veriThemeStyleOf(context),
     );
     return VeriCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -858,6 +859,7 @@ class _BudgetInsightCard extends StatelessWidget {
       ratio,
       Theme.of(context).brightness,
       Theme.of(context).colorScheme.primary,
+      veriThemeStyleOf(context),
     );
     final (title, description, icon) = _budgetInsight(
       l10n: AppLocalizations.of(context),
@@ -983,15 +985,16 @@ Color budgetProgressColor(
   double ratio,
   Brightness brightness, [
   Color accent = veriRoyal,
+  ThemeStylePreference style = ThemeStylePreference.veri,
 ]) {
   if (budget <= 0) {
-    return veriLine;
+    return veriLineForStyle(style, brightness);
   }
   if (remaining < 0 || ratio >= 1) {
-    return veriSemanticFor(brightness, veriExpense);
+    return veriSemanticFor(brightness, veriExpense, style);
   }
   if (ratio >= 0.85) {
-    return veriSemanticFor(brightness, veriWarning);
+    return veriSemanticFor(brightness, veriWarning, style);
   }
   return accent;
 }

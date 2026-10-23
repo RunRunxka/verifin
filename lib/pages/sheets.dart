@@ -30,39 +30,49 @@ Future<T?> showVeriModalSheet<T>({
   bool useSafeArea = false,
   Color? backgroundColor,
   ShapeBorder? shape,
-}) => showModalBottomSheet<T>(
-  context: context,
-  // 拖拽把手在内容内部渲染（见下方 Column），与弹层表面成一体。
-  showDragHandle: false,
-  isScrollControlled: isScrollControlled,
-  useSafeArea: useSafeArea,
-  backgroundColor: backgroundColor,
-  shape: shape,
-  builder: (context) => Material(
-    // 底部弹窗只圆顶部两个角，左下/右下保持直角，避免方块机上观感怪异。
-    borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusXl)),
-    clipBehavior: Clip.antiAlias,
-    color: backgroundColor,
-    child: Stack(
-      alignment: Alignment.topCenter,
-      children: <Widget>[
-        Padding(
-          padding: EdgeInsets.only(
-            top: showDragHandle == true ? _VeriSheetDragHandle.height : 0,
+}) {
+  final tokens = VeriThemeTokens.of(context);
+  final isMiuix = tokens.style == ThemeStylePreference.miuix;
+  final miuixShape = isMiuix ? veriSheetShape(context) : null;
+  final resolvedBackground =
+      backgroundColor ?? (isMiuix ? tokens.elevatedSurface : null);
+  return showModalBottomSheet<T>(
+    context: context,
+    // 拖拽把手在内容内部渲染（见下方 Column），与弹层表面成一体。
+    showDragHandle: false,
+    isScrollControlled: isScrollControlled,
+    useSafeArea: useSafeArea,
+    backgroundColor: resolvedBackground,
+    shape: shape ?? miuixShape,
+    builder: (context) => Material(
+      // Veri 保持顶部 24dp 普通圆角；Miuix 由样式令牌给出更大的连续曲率。
+      shape: miuixShape,
+      borderRadius: isMiuix
+          ? null
+          : BorderRadius.vertical(top: Radius.circular(veriRadiusXl)),
+      clipBehavior: Clip.antiAlias,
+      color: resolvedBackground,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(
+              top: showDragHandle == true ? _VeriSheetDragHandle.height : 0,
+            ),
+            child: builder(context),
           ),
-          child: builder(context),
-        ),
-        if (showDragHandle == true)
-          const Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _VeriSheetDragHandle(),
-          ),
-      ],
+          if (showDragHandle == true)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _VeriSheetDragHandle(),
+            ),
+        ],
+      ),
     ),
-  ),
-);
+  );
+}
 
 /// 底部弹窗内嵌的拖拽把手：与内容连成一体。
 class _VeriSheetDragHandle extends StatelessWidget {
@@ -354,9 +364,7 @@ Future<T?> showOptionSheet<T>({
     context: context,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (context) {
       final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
       final headerColor = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -465,9 +473,7 @@ Future<CurrencyDefinition?> showCurrencyPickerSheet({
     showDragHandle: true,
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (context) => _CurrencyPickerSheet(
       title: title,
       selectedCode: selectedCode?.toUpperCase(),
@@ -964,9 +970,7 @@ Future<String?> showCategoryPickerSheet(
     context: context,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (_) => CategoryPickerSheet(
       categories: categories,
       selectedId: selectedId,
@@ -1013,9 +1017,7 @@ Future<Account?> showAccountPickerSheet({
     context: context,
     showDragHandle: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (context) {
       final controller = VeriFinScope.of(context);
       final l10n = AppLocalizations.of(context);
@@ -1466,9 +1468,7 @@ Future<String?> showCategoryIconPickerSheet({
     showDragHandle: true,
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (context) => _CategoryIconPickerBody(selected: selected),
   );
 }
@@ -1883,9 +1883,7 @@ Future<List<String>?> pickEntryTags({
     showDragHandle: true,
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(veriRadiusLg)),
-    ),
+    shape: veriSheetShape(context, veriRadius: veriRadiusLg),
     builder: (sheetContext) => SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(

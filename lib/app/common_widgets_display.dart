@@ -45,7 +45,6 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -55,11 +54,9 @@ class FilterPill extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 36),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: isDark ? veriSurfaceAltDark : veriSurfaceLight,
+            color: veriAltSurface(context),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.10) : veriLine,
-            ),
+            border: Border.all(color: VeriThemeTokens.of(context).line),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -25,11 +25,11 @@
 
 **货币单位的显示口径**：金额旁的重复单位由 `formatUserMoney` 族自动处理（单币种账本且「单币种隐藏单位」开启时不显示；**该开关默认开启**，所以这是单币种账本的默认形态，不是边界情况）。页头副标题、卡片角标这类「单位单独占一个位置」的文字必须走 `currencyUnitSubtitle` / `MoneyUnitLabel`；底层判空入口是 `optionalCurrencyUnit` / `textCurrencyUnitHidden`，需要别的措辞（如「本位币 ¥」）或需要在空串与省略之间取舍时可以自行拼接，但必须先判空。不要直接调 `displayCurrencyUnit`（它只解析符号/代码样式、不读闸门），也不要裸拼 model 的 `currencyCode`。隐藏时副标题只保留上下文（书名、日期范围），没有上下文就整条省略；调用方为「单位：x」单独加的 `SizedBox`／`Padding` 必须与单位同时消失（判断条件用 `textCurrencyUnitHidden`）——只让组件自己渲染为空会把那段间距留在版面里，看起来像卡片底部空了一块。**多币种账本（任一账户/交易/周期规则/汇率非本位币）下单位必须照常显示**，收口不得把该显示的地方一起隐藏。唯一例外是「我的 → 账本」列表行尾的币种：它按「账本多于一个」判断（`ledgerBooks.length > 1`），单一账本没有可比较对象、多账本才用它区分口径，因此不受单币种闸门约束，也不适用上面「不要裸拼 `currencyCode`」的禁令。豁免：记账/交易详情/周期规则里的「交易币种」行、汇率等式、货币选择器、导入列名——它们的主题就是币种。
 
-页面继续使用 `Scaffold > SafeArea > VeriPage` 与 `VeriHeader` / `PageHeader`。默认页面和固定页脚的头部对齐规则见 [页面骨架](ui-guidelines.md)。颜色、字号和圆角使用主题令牌，不在各页复制样式。语义色（收入 / 支出 / 转账 / 提醒）必须经 `veriSemantic(context, veriX)` 取用，无 `BuildContext` 的纯取色函数用 `veriSemanticFor(brightness, veriX)`：浅色底取加深变体（`veri*OnLight`，对比度 ≥ 4.5:1），深色底取原亮色；不要直接使用 `veriIncome` / `veriExpense` / `veriBlue` / `veriWarning` 渲染。
+页面继续使用 `Scaffold > SafeArea > VeriPage` 与 `VeriHeader` / `PageHeader`。默认页面和固定页脚的头部对齐规则见 [页面骨架](ui-guidelines.md)。颜色、字号和圆角使用主题令牌，不在各页复制样式。语义色（收入 / 支出 / 转账 / 提醒）必须经 `veriSemantic(context, veriX)` 取用，无 `BuildContext` 的纯取色函数用 `veriSemanticFor(brightness, veriX, style)`：浅色底取加深变体（`veri*OnLight`，对比度 ≥ 4.5:1），深色底取原亮色；Miuix 风格使用自己的语义色表。不要直接使用 `veriIncome` / `veriExpense` / `veriBlue` / `veriWarning` 渲染。
 
 ## 字体层级
 
-字号必须保持语义层级：displayLarge 38、displayMedium 32、displaySmall 26、titleLarge/Medium/Small 17/14/13、bodyLarge/Medium/Small 14/13/12、labelLarge/Medium/Small 12/11/10sp，页面标题 w800。我的宫格标题使用 bodyMedium 13sp / w600，副标题使用 labelSmall 10sp / w400；首页主金额和导航标签保留局部明确尺寸（32/12sp），不能为调整单处而放大所有页面字体。字体家族及系统 textScaler 不变。
+字号必须保持语义层级：displayLarge 38、displayMedium 32、displaySmall 26、titleLarge/Medium/Small 17/14/13、bodyLarge/Medium/Small 14/13/12、labelLarge/Medium/Small 12/11/10sp，页面标题 w800。我的宫格标题使用 bodyMedium 13sp / w600，副标题使用 labelSmall 10sp / w400；首页主金额和导航标签保留局部明确尺寸（32/12sp），不能为调整单处而放大所有页面字体。字体家族除 Miuix 主题风格使用 MiSans 外不变；系统 textScaler 不变。MiSans 只换字体族，不改变上述任何字号与字重层级。
 
 ## 表面材质
 
@@ -37,25 +37,46 @@
 
 | 对象 | 约定 |
 | --- | --- |
-| 内容卡片 | `veriContentSurfaceColor(brightness)` 实色 + `veriCardRadius`（16）圆角 + 细描边；深色 `veriCardSurfaceDark`，浅色 `veriSurfaceLight` |
-| 页面背景 | `scaffoldBackgroundColor` 取画布纯色（`veriCanvasLight` / `veriCanvasDark`），不用渐变 |
+| 内容卡片 | `veriContentSurface(context)` 实色 + `VeriThemeTokens.cardRadius` 圆角 + 细描边；Veri 为 16dp / 深色 `veriCardSurfaceDark` / 浅色 `veriSurfaceLight`，Miuix 为 20dp 连续曲率 |
+| 页面背景 | `scaffoldBackgroundColor` 取当前风格画布纯色（`VeriThemeTokens.canvas`），不用渐变 |
 | 底部导航（停靠底栏） | 不透明表面色 + 顶部细描边；表面色一直铺到屏幕最底（含系统导航条背后） |
 | 底部导航（液态玻璃，可选样式） | 双模：Android 13+ 真机由原生 QWEA0 `LiquidGlassTabBar` 绘制（与 QWEA0 库同一渲染管线，实时折射底下页面内容 + 色散 + 边缘高光 + 水滴指示器），应用整体以 `RenderMode.texture` 呈现；其余场景回退 Flutter 实现（`BackdropFilter + ImageFilter.shader` 折射 + 水滴透镜）。仅此一处允许模糊/折射，实现局部化在样式自有文件与 `LiquidGlassBarController.kt` |
 | 快捷记账按钮 | `colorScheme.primary` 实色圆角方形 + `onPrimary` 加号，只在首页右下角显示 |
-| 菜单 / 弹层 | 实色面板（`veriSurfaceLight` / `veriSurfaceAltDark`）+ 圆角描边；进出为淡入淡出 + 0.96→1 缩放 |
+| 菜单 / 弹层 | 实色面板（`veriElevatedSurface(context)`）+ 圆角描边；Veri 圆角 24/16，Miuix 28/20；进出为淡入淡出 + 0.96→1 缩放 |
 | 预算圆环 | `VeriBudgetRing`（`fl_chart` 环形）；轨底 + 进度弧两段，中心内容由调用方提供。禁止内外白线，比例与颜色固定 |
 
 > 本仓库为 fork：上游父项目的液态玻璃样式使用 vendored `GlassTabBar.bottom`；本分支使用原生 QWEA0 + fallback。差异汇总见 [README](../../README.md#与上游父项目的差异)。
 
 **除液态玻璃底栏样式外禁止**新增 `BackdropFilter`、`ImageFilter.blur`、片元着色器滤镜或整屏渐变背景来「做材质」。需要区分层次时用表面色差、描边和阴影，不靠透明度堆叠。液态玻璃实现必须收敛在样式自有文件、着色器与原生 `LiquidGlassBarController.kt` 内，其他样式不得引用。
 
-页面必须各自拥有不透明背景，`colorScheme.surface` 保持不透明（`test/material_stability_test.dart` 强制）。深色输入框默认无白色描边，以柔和填色区分；聚焦用品牌蓝细边，错误用错误色。
+页面必须各自拥有不透明背景，`colorScheme.surface` 保持不透明（`test/material_stability_test.dart` 对两种风格都强制）。深色输入框默认无白色描边，以柔和填色区分；聚焦用品牌蓝细边，错误用错误色。
+
+### Miuix 主题风格
+
+外观 → 主题风格提供「经典（Veri）」与「Miuix」两套视觉语言。风格与明暗（系统/浅色/深色）正交，都是设备本地偏好。Miuix 只改变颜色、圆角与字体，不改变页面骨架、间距、字号层级和任何业务结构。
+
+| 角色 | 浅色 | 深色 |
+| --- | --- | --- |
+| 画布 | `#F7F7F7` | `#242424` |
+| 卡片 | `#FFFFFF` | `#2E2E2E` |
+| 浮层/底栏/菜单 | `#FFFFFF` | `#333333` |
+| 胶囊/输入框/分段轨 | `#F0F0F0` | `#434343` |
+| 分割线 / 描边 | `#E0E0E0` / `#D9D9D9` | `#393939` / `#404040` |
+| 主色 | `#3482FF` | `#277AF7` |
+| 支出 / 收入 | `#C33A2B` / `#0B7F43` | `#FF7A6E` / `#3DDC84` |
+| 提醒 / 信息蓝 | `#A05A00` / `#1A67D6` | `#FFB84D` / `#5AA0FF` |
+
+- Miuix **固定使用 HyperOS 蓝**：不读取「主题色」设置，不跟随系统动态色，设置页在该风格下隐藏主题色行；切回经典后原主题色偏好原样恢复。
+- 深色卡片使用 `#2E2E2E` 而不是 Miuix 原生与画布相同的 `#242424`，是为了保留本项目「表面色差 + 描边」的层级约定。
+- 浅色语义色是 HyperOS 色相的压暗变体，保证在 `#FFFFFF` 卡片与 `#F7F7F7` 画布上达到正文级 AA（4.5:1）；不要直接改用 Miuix 原生 `#E94634` 等未达标的亮色。
+- 卡片与底部弹层使用 `ContinuousRectangleBorder`（连续曲率，squircle 近似）；菜单库只支持 `BorderRadius`，因此菜单只放大圆角（面板 28、条目 20），不做连续曲率。
+- Miuix 使用随包的 MiSans（400/600 两个字重）。许可要求在使用该字体的软件中注明来源，设置 → 关于 已常显说明。
 
 菜单进出为 220ms 对称缓入缓出，缩放仅 0.96–1；系统减少动态效果开启时直接切换。
 
-设置分组：外观（主题、主题色、导航栏样式）、金额显示（两位小数、单位样式、单币种隐藏单位）、通用（语言、触感、应用锁）、记账（记一笔动作、数字键盘布局、默认账户、自动识别、AI 设置）、关于（检查更新、隐私政策、用户协议、鸣谢）。各组共用页面草稿与保存操作，分组不能变成即时写入；「导航栏样式」进入独立选择页，选择页只把结果回传给设置页草稿。
+设置分组：外观（主题模式、主题风格、主题色、导航栏样式）、金额显示（两位小数、单位样式、单币种隐藏单位）、通用（语言、触感、应用锁）、记账（记一笔动作、数字键盘布局、默认账户、自动识别、AI 设置）、关于（检查更新、隐私政策、用户协议、鸣谢）。各组共用页面草稿与保存操作，分组不能变成即时写入；「导航栏样式」进入独立选择页，选择页只把结果回传给设置页草稿。
 
-主题色由 Material 3 `ColorScheme` 统一生成：默认使用 Veri Royal 蓝色，用户也可跟随 Android 系统动态色或保存不透明的自定义颜色。自定义模式下用户选中的颜色就是 `colorScheme.primary`，不再经过另一种主色替换。底部导航选中态、主按钮、快捷记账按钮、菜单选中态、焦点边框和操作性强调图标使用 `colorScheme.primary` 及对应的 `onPrimary` / 容器角色；收入、支出、转账、提醒和错误继续使用独立语义色。页面背景、卡片、菜单、弹层与默认停靠底栏都是不透明实色；可选液态玻璃底栏是唯一例外。
+主题色由 Material 3 `ColorScheme` 统一生成：默认使用 Veri Royal 蓝色，用户也可跟随 Android 系统动态色或保存不透明的自定义颜色。自定义模式下用户选中的颜色就是 `colorScheme.primary`，不再经过另一种主色替换。以上规则只对经典风格生效；Miuix 风格固定使用 HyperOS 蓝（浅色 `#3482FF` / 深色 `#277AF7`），不读取主题色。底部导航选中态、主按钮、快捷记账按钮、菜单选中态、焦点边框和操作性强调图标使用 `colorScheme.primary` 及对应的 `onPrimary` / 容器角色；收入、支出、转账、提醒和错误继续使用独立语义色。页面背景、卡片、菜单、弹层与默认停靠底栏都是不透明实色；可选液态玻璃底栏是唯一例外。
 
 ## 导航与输入
 

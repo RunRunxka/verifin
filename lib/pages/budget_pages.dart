@@ -178,6 +178,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                                     ratio,
                                     Theme.of(context).brightness,
                                     Theme.of(context).colorScheme.primary,
+                                    veriThemeStyleOf(context),
                                   ),
                                 ),
                               ),
@@ -212,6 +213,7 @@ class _BudgetOverviewPageState extends State<BudgetOverviewPage> {
                                             Theme.of(
                                               context,
                                             ).colorScheme.primary,
+                                            veriThemeStyleOf(context),
                                           ),
                                         ),
                                   ),

@@ -73,7 +73,7 @@ class VeriDockedRootNavigation extends StatelessWidget {
 
     // 表面色要一直铺到屏幕最底（含系统导航条背后），否则那一条会露出页面底色，
     // 和底栏分成两块。因此底衬在最外，条目内容再用内边距让开。
-    final surface = veriElevatedSurfaceColor(Theme.of(context).brightness);
+    final surface = veriElevatedSurface(context);
     final outline = Theme.of(context).brightness == Brightness.dark
         ? Colors.white.withValues(alpha: 0.07)
         : Colors.black.withValues(alpha: 0.07);

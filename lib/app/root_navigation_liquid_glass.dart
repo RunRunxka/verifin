@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'app_lock_session.dart';
+import 'app_theme.dart';
 import 'liquid_glass_icon_raster.dart';
 import 'liquid_glass_lens.dart';
 import 'liquid_glass_material.dart';
@@ -169,7 +170,12 @@ class _VeriLiquidGlassRootNavigationState
   /// 当前主题的亮度与主题主色变体，原生栏的配色与此一一对应。
   ({bool dark, int accentOverLight, int accentOverDark}) _appearance() {
     final theme = Theme.of(context);
-    final accent = veriLiquidGlassAccentPair(theme.colorScheme.primary);
+    final style = veriThemeStyleOf(context);
+    final accent = veriLiquidGlassAccentPair(
+      theme.colorScheme.primary,
+      lightCanvas: veriCanvasForStyle(style, Brightness.light),
+      darkCanvas: veriCanvasForStyle(style, Brightness.dark),
+    );
     return (
       dark: theme.brightness == Brightness.dark,
       accentOverLight: accent.overLight.toARGB32(),
@@ -614,7 +620,12 @@ class _LiquidGlassTab extends StatelessWidget {
     // 用中性墨色。降级路径无法采样底下内容，以主题亮度近似 backdrop 亮度。
     final theme = Theme.of(context);
     final overLight = theme.brightness == Brightness.light;
-    final accent = veriLiquidGlassAccentPair(theme.colorScheme.primary);
+    final style = veriThemeStyleOf(context);
+    final accent = veriLiquidGlassAccentPair(
+      theme.colorScheme.primary,
+      lightCanvas: veriCanvasForStyle(style, Brightness.light),
+      darkCanvas: veriCanvasForStyle(style, Brightness.dark),
+    );
     final selectedColor = overLight ? accent.overLight : accent.overDark;
     final unselectedColor = overLight
         ? Colors.black.withValues(alpha: 0.7)

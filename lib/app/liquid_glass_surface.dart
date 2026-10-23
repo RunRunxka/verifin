@@ -312,7 +312,7 @@ class VeriLiquidGlassSurface extends StatelessWidget {
     final highContrast = MediaQuery.highContrastOf(context);
     final borderRadius = this.borderRadius ?? BorderRadius.circular(radius);
     final surface = highContrast
-        ? veriContentSurfaceColor(brightness)
+        ? veriContentSurface(context)
         : tint ?? veriLiquidGlassTint(brightness);
 
     final content = DecoratedBox(

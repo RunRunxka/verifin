@@ -321,14 +321,18 @@ List<double> trendSeriesValues(
   }
 }
 
-Color _trendSeriesColor(HomeTrendSeries series, Brightness brightness) {
+Color _trendSeriesColor(
+  HomeTrendSeries series,
+  Brightness brightness,
+  ThemeStylePreference style,
+) {
   switch (series) {
     case HomeTrendSeries.expense:
-      return veriSemanticFor(brightness, veriExpense);
+      return veriSemanticFor(brightness, veriExpense, style);
     case HomeTrendSeries.income:
-      return veriSemanticFor(brightness, veriIncome);
+      return veriSemanticFor(brightness, veriIncome, style);
     case HomeTrendSeries.net:
-      return veriSemanticFor(brightness, veriBlue);
+      return veriSemanticFor(brightness, veriBlue, style);
   }
 }
 
@@ -368,11 +372,13 @@ class HomeTrendPanel extends StatelessWidget {
     final mutedColor = textColor.withValues(alpha: 0.68);
 
     final bigValue = computeHomeMetric(config.big, metricContext);
+    final style = veriThemeStyleOf(context);
     final bigColor = homeMetricColor(
       config.big,
       bigValue,
       mutedColor,
       Theme.of(context).brightness,
+      style,
     );
     final pillValue = computeHomeMetric(config.pill, metricContext);
     final pillColor = homeMetricColor(
@@ -380,12 +386,13 @@ class HomeTrendPanel extends StatelessWidget {
       pillValue,
       mutedColor,
       Theme.of(context).brightness,
+      style,
     );
 
     final title = config.title.isEmpty ? l10n.trendDefaultTitle : config.title;
     final seriesColor = isZeroAmount(chartValues.fold<double>(0, math.max))
         ? mutedColor
-        : _trendSeriesColor(config.series, Theme.of(context).brightness);
+        : _trendSeriesColor(config.series, Theme.of(context).brightness, style);
     final seriesLabel = homeTrendSeriesLabel(l10n, config.series);
 
     return VeriCard(
@@ -581,6 +588,7 @@ class _MetricTile extends StatelessWidget {
       value,
       mutedColor,
       Theme.of(context).brightness,
+      veriThemeStyleOf(context),
     );
     return _TrendMetric(
       label: homeMetricLabel(AppLocalizations.of(context), metric),
@@ -744,6 +752,7 @@ class BudgetPanel extends StatelessWidget {
                           ratio,
                           Theme.of(context).brightness,
                           Theme.of(context).colorScheme.primary,
+                          veriThemeStyleOf(context),
                         ),
                       ),
                     ),

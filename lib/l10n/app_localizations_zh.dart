@@ -2503,7 +2503,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get creditsOpenFailed => '没能打开浏览器，请稍后再试。';
 
   @override
+  String get aboutFontCredit => '本应用使用 MiSans 字体（小米科技有限责任公司）。';
+
+  @override
   String get themeMode => '主题模式';
+
+  @override
+  String get themeStyleLabel => '主题风格';
+
+  @override
+  String get themeStyleVeri => '经典';
+
+  @override
+  String get themeStyleMiuix => 'Miuix';
 
   @override
   String get themeColorLabel => '主题色';

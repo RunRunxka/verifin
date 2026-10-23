@@ -115,14 +115,25 @@ class VeriCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderRadius = BorderRadius.circular(veriCardRadius);
-    final decoration = BoxDecoration(
-      color: veriContentSurfaceColor(Theme.of(context).brightness),
-      borderRadius: borderRadius,
-      border: Border.all(
-        color: (isDark ? Colors.white : veriInk).withValues(alpha: 0.045),
-      ),
+    final tokens = VeriThemeTokens.of(context);
+    final isMiuix = tokens.style == ThemeStylePreference.miuix;
+    final borderRadius = BorderRadius.circular(tokens.cardRadius);
+    final borderColor = (isDark ? Colors.white : veriInk).withValues(
+      alpha: 0.045,
     );
+    // Miuix 用连续曲率（squircle 近似）；Veri 保持原有 BoxDecoration 渲染。
+    final Decoration decoration = isMiuix
+        ? ShapeDecoration(
+            color: tokens.contentSurface,
+            shape: veriCardShape(
+              context,
+            ).copyWith(side: BorderSide(color: borderColor)),
+          )
+        : BoxDecoration(
+            color: tokens.contentSurface,
+            borderRadius: borderRadius,
+            border: Border.all(color: borderColor),
+          );
 
     if (onTap != null && quietTap) {
       return Semantics(
@@ -146,7 +157,8 @@ class VeriCard extends StatelessWidget {
         child: Ink(
           decoration: decoration,
           child: InkWell(
-            borderRadius: borderRadius,
+            borderRadius: isMiuix ? null : borderRadius,
+            customBorder: isMiuix ? veriCardShape(context) : null,
             onTap: onTap,
             child: Padding(padding: padding, child: child),
           ),
@@ -548,7 +560,7 @@ class _EmptyStateArt extends StatelessWidget {
               entrance: entrance,
               icon: icon,
               primary: theme.colorScheme.primary,
-              surface: veriContentSurfaceColor(theme.brightness),
+              surface: veriContentSurface(context),
               onSurface: theme.colorScheme.onSurface,
             ),
           ),

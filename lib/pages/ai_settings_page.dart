@@ -441,7 +441,7 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
       helperText: helper,
       helperMaxLines: 2,
       filled: true,
-      fillColor: isDark ? veriSurfaceAltDark : veriSurfaceAltLight,
+      fillColor: veriSubtleSurface(context),
       contentPadding: EdgeInsets.fromLTRB(
         14,
         14,

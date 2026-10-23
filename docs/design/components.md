@@ -17,9 +17,10 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 预算圆环用 `VeriBudgetRing`（`chart_painters.dart`，内部是 `fl_chart` 环形图），参数为 value/trackColor/progressColor/center/strokeWidth；轨底 + 进度弧两段，中心内容由调用方给，禁止内外白线。
 
 **表面材质**：除可选的液态玻璃底栏样式外，卡片、导航、快捷按钮、菜单与弹层一律用不透明实色。
-`VeriCard`（`common_widgets_scaffold.dart`）走 `veriContentSurfaceColor(brightness)` + 圆角 + 细描边；
-页面背景取 `scaffoldBackgroundColor` 的画布纯色；弹层由 `sheets.dart` 的 `_showVeriModalSheet`
-统一为实色表面 + 顶部圆角 + 内置拖拽把手，外部仍使用各领域 `show…Sheet`。
+`VeriCard`（`common_widgets_scaffold.dart`）走 `veriContentSurface(context)` + `VeriThemeTokens.cardRadius` + 细描边；
+页面背景取 `scaffoldBackgroundColor` 的画布纯色；弹层由 `sheets.dart` 的 `showVeriModalSheet`
+统一为实色表面 + `veriSheetShape(context)` 顶部圆角 + 内置拖拽把手，外部仍使用各领域 `show…Sheet`。
+主题风格（经典 / Miuix）只经 `VeriThemeTokens` 取色与圆角，组件不直接判断风格。
 
 > 本仓库为 fork：`glass` 分支的液态玻璃底栏使用原生 QWEA0 + fallback；上游父项目使用 vendored `GlassTabBar.bottom`。差异汇总见 [README](../../README.md#与上游父项目的差异)。
 
@@ -215,7 +216,7 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 | AI 对话查询工具 | `ai/ledger_query.dart`、`ai/ai_query_tool.dart`、`ai/ai_tool_schema.dart`、`ai/ai_ledger_snapshot.dart` | 通用交易筛选 `queryLedgerEntries`（`LedgerQuery`，有界查询使用 Top-K）；只读工具协议 `AiQueryTool` + 只含不可变 `AiLedgerSnapshot` 的 `AiToolContext`（另带 `currencyDisplay`，**工具层不读 `amount_format` 全局闸门**）+ `AiToolResult` + `AiResultDisplay`（sealed）+ typed Schema + 注册表 `buildAiQueryTools`。`AiToolSchema` 同时生成原生 Schema 与兼容提示词约束，`validateArguments` 统一归一化并回喂字段错误；交易展示 DTO 自带生成时交易/账户/分类/标签快照（**新增分析工具在此登记，并更新 `ai-tools.md`**） |
 | AI Agent 引擎 | `ai/ai_agent_engine.dart`、`ai/ai_native_tool_protocol.dart`、`ai/ai_prompt_tool_protocol.dart` | 双协议只读 Agent 状态机（结构化 `AiAgentMessage` / `AiAgentEvent`）；原生 Tool Calls 与兼容标记协议共用工具执行、轮次、重试和资源边界；原生正文逐事件下发，支持 cancellation token、断流保留和有界响应；`AiAgentCompleted` 携带真实工具调用统计，重试原因使用 typed enum；结构化传输入口为 `aiAgentStream` / `aiAgentComplete` |
 | AI 聊天会话控制器 | `ai/ai_chat_session_controller.dart`、`ai/ai_streaming_text_buffer.dart` | 页面生命周期内不可变消息列表、账本选择、发送/停止/清空、50ms 流式正文合并、工具步骤、回答来源和能力更新；不访问 `BuildContext`，不持久化聊天 |
-| 设计令牌 | `app_theme.dart` | Material 主交互色从 `Theme.of(context).colorScheme.primary` 读取（默认 Veri Royal、系统动态色或用户自定义色）；`veriRoyal` 仅作为默认回退和无主题上下文的绘制 API 默认值；语义色 `veriBlue` `veriIncome` `veriExpense` `veriWarning` 保持独立；圆角 `veriRadiusSm/Md/Lg/Xl` 与 `veriCardRadius`（卡片圆角，`VeriCard` 与卡内自行裁角的场景共用同一取值，不要在调用点另写数字）；`veriHeaderHeight` `veriPageMaxWidth` |
+| 设计令牌 | `app_theme.dart` | `VeriThemeTokens`（`ThemeExtension`）按「主题风格 × 明暗」解析 `canvas / contentSurface / elevatedSurface / altSurface / subtleSurface / line / outline / expense / income / blue / warning / cardRadius / panelRadius / sheetRadius / controlRadius / fontFamily`；UI 经 `VeriThemeTokens.of(context)`、`veriContentSurface(context)`、`veriElevatedSurface(context)`、`veriAltSurface(context)`、`veriSubtleSurface(context)`、`veriThemeStyleOf(context)` 取用；卡片外形 `veriCardShape(context)`、弹层 `veriSheetShape(context)`。无 context 的纯取色函数用 `veriSemanticFor(brightness, color, style)` / `veriCanvasForStyle` / `veriLineForStyle`。Material 主交互色从 `Theme.of(context).colorScheme.primary` 读取（经典：Veri Royal/系统动态色/自定义色；Miuix：固定 HyperOS 蓝）；`veriRoyal` 仅作为默认回退和无主题上下文的绘制 API 默认值；旧常量 `veriRadiusSm/Md/Lg/Xl`、`veriCardRadius` 仍供经典风格与无 context 场景使用；`veriHeaderHeight` `veriPageMaxWidth` |
 
 ## 族 11 — AI 对话查询 UI
 
@@ -243,7 +244,7 @@ Veri Fin 已有的**可复用 widget / 弹窗 helper / 对话框 / 纯函数**�
 
 ## 维护约定
 
-- `app_theme.dart` 维护内容表面令牌与纯函数 `veriContentSurfaceColor(Brightness)`，供 `VeriCard` 和资产封面共用。排版只有一套已评审参数，不再有构建开关或第二套布局分支。
+- `app_theme.dart` 维护 `VeriThemeTokens` 与表面取色入口；新页面/组件一律用 context 版本（`veriContentSurface(context)` 等），不要再写 `brightness == dark ? … : …` 的表面分支。`veriContentSurfaceColor(Brightness)` 只作为无 context 的经典风格回退保留。排版只有一套已评审参数，主题风格不改变骨架、间距与字号层级。
 
 - 新增可复用件 → 归入对应族、加进本表、放对的文件（通用叶子组件→`common_widgets.dart`，跨路由反馈 Host→`feedback.dart`，弹窗 helper→`sheets.dart`，记账相关 widget→`entry_sheets.dart`，纯计算→对应 `*_math`/`*_tree` 模块）。
 - **收起单位要连间距一起收**：调用方为「单位：x」单独加的 `SizedBox`／`Padding` 必须与单位同时消失。只让组件自己渲染为空会把那段间距留在版面里，看起来像空了一块。判断条件用 `textCurrencyUnitHidden`。

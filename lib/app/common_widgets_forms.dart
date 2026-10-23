@@ -720,7 +720,7 @@ const double _kSegmentSpacing = 2;
 /// 记账页类型切换、账户详情日/月、统计口径、时间范围、分类/周期/分组的口径切换
 /// 都复用本组件，保证同类控件观感一致。
 ///
-/// - 颜色全部取自设计令牌（[veriSurfaceAltDark] / [veriSurfaceLight] / 卡片表面色），
+/// - 颜色全部取自当前主题风格的令牌（[veriAltSurface] / [veriContentSurface]），
 ///   调用方只能通过 [accentOf] 指定**语义强调色**（如支出红、收入青），不能自定义底板。
 /// - 自带 `Semantics`：整组标注为选中项，单个选项标注为按钮，补足第三方控件缺失的语义。
 /// - 标签用文字，不用图标；图标型开关仍走 [CompactSwitchRow]。
@@ -762,11 +762,16 @@ class VeriSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final track = isDark ? veriSurfaceAltDark : veriSurfaceLight;
+    final tokens = VeriThemeTokens.of(context);
+    final isMiuix = tokens.style == ThemeStylePreference.miuix;
+    final track = veriAltSurface(context);
     // 选中胶囊用卡片表面色：在深色下比轨道亮、浅色下比轨道白，形成明确的“浮起”层次。
-    final indicator = veriContentSurfaceColor(Theme.of(context).brightness);
+    final indicator = veriContentSurface(context);
     final height = compact ? 30.0 : 40.0;
-    final radius = BorderRadius.circular(compact ? veriRadiusSm : veriRadiusMd);
+    final segmentRadius = isMiuix
+        ? (compact ? veriMiuixChipRadius : tokens.controlRadius)
+        : (compact ? veriRadiusSm : veriRadiusMd);
+    final radius = BorderRadius.circular(segmentRadius);
 
     return LayoutBuilder(
       builder: (context, constraints) => Semantics(
@@ -791,9 +796,7 @@ class VeriSegmentedControl<T> extends StatelessWidget {
             backgroundColor: track,
             indicatorColor: indicator,
             borderRadius: radius,
-            indicatorBorderRadius: BorderRadius.circular(
-              (compact ? veriRadiusSm : veriRadiusMd) - 2,
-            ),
+            indicatorBorderRadius: BorderRadius.circular(segmentRadius - 2),
             borderColor: Colors.transparent,
             indicatorBorder: Border.all(
               color: isDark

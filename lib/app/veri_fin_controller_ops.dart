@@ -779,6 +779,8 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
 
   ThemePreference get themePreference => _themePreference;
 
+  ThemeStylePreference get themeStylePreference => _themeStylePreference;
+
   UserProfile get profile => _profile;
 
   String get assetCoverUrl => _assetCoverUrl;
@@ -1156,6 +1158,17 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     notifyListeners();
   }
 
+  /// 主题风格是设备本地偏好：不进 JSON 备份，初始化数据时保留。
+  void setThemeStylePreference(ThemeStylePreference preference) {
+    if (_themeStylePreference == preference) {
+      return;
+    }
+    _themeStylePreference = preference;
+    themeStylePreferenceListenable.value = preference;
+    _store.write(_themeStyleKey, preference.name);
+    notifyListeners();
+  }
+
   ThemeColorPreference get themeColorPreference => _themeColorPreference;
 
   void setThemeColorPreference(ThemeColorPreference preference) {
@@ -1457,6 +1470,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
   /// 主设置页一次性提交显示与记账偏好；所有 KV 写入完成后才更新 Controller。
   Future<bool> saveAppPreferencesDraft({
     required ThemePreference themePreference,
+    required ThemeStylePreference themeStylePreference,
     required ThemeColorPreference themeColorPreference,
     required LocalePreference localePreference,
     required NavigationStylePreference navigationStylePreference,
@@ -1478,6 +1492,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
     try {
       await _store.writeAndFlush(_themeKey, themePreference.name);
+      await _store.writeAndFlush(_themeStyleKey, themeStylePreference.name);
       await _store.writeAndFlush(_themeColorKey, themeColorPreference.encode());
       await _store.writeAndFlush(_localeKey, localePreference.name);
       await _store.writeAndFlush(
@@ -1514,6 +1529,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     }
 
     _themePreference = themePreference;
+    _themeStylePreference = themeStylePreference;
     _themeColorPreference = themeColorPreference;
     _localePreference = localePreference;
     _navigationStylePreference = navigationStylePreference;
@@ -1530,6 +1546,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _showRunningBalance = showRunningBalance;
     _numberPadLayout = numberPadLayout;
     themePreferenceListenable.value = themePreference;
+    themeStylePreferenceListenable.value = themeStylePreference;
     themeColorPreferenceListenable.value = themeColorPreference;
     localePreferenceListenable.value = localePreference;
     navigationStylePreferenceListenable.value = navigationStylePreference;
@@ -4494,6 +4511,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
     _dailyBudgets.clear();
     _profile = _seedProfile;
     _themePreference = ThemePreference.system;
+    _themeStylePreference = ThemeStylePreference.veri;
     _themeColorPreference = ThemeColorPreference.defaultValue;
     _navigationStylePreference = NavigationStylePreference.docked;
     _activeBookId = defaultLedgerBookId;
@@ -4514,6 +4532,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
 
     for (final key in <String>[
       _themeKey,
+      _themeStyleKey,
       _themeColorKey,
       _navigationStyleKey,
       _profileKey,
@@ -4541,6 +4560,7 @@ mixin _ControllerOps on ChangeNotifier, _ControllerState {
       }
     }
     themePreferenceListenable.value = _themePreference;
+    themeStylePreferenceListenable.value = _themeStylePreference;
     themeColorPreferenceListenable.value = _themeColorPreference;
     navigationStylePreferenceListenable.value = _navigationStylePreference;
     _markWidgetProjectionChanged();

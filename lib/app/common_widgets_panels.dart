@@ -431,14 +431,10 @@ class _CalendarPreviewState extends State<CalendarPreview> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? veriSurfaceAltDark
-                          : veriSurfaceAltLight,
+                      color: veriSubtleSurface(context),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : veriLine,
+                        color: VeriThemeTokens.of(context).line,
                       ),
                     ),
                     child: Text(

@@ -364,44 +364,51 @@ class _VeriFinAppState extends State<VeriFinApp> with WidgetsBindingObserver {
         child: ValueListenableBuilder<ThemePreference>(
           valueListenable: _controller.themePreferenceListenable,
           builder: (context, themePreference, _) {
-            return ValueListenableBuilder<ThemeColorPreference>(
-              valueListenable: _controller.themeColorPreferenceListenable,
-              builder: (context, themeColorPreference, _) {
-                return ValueListenableBuilder<LocalePreference>(
-                  valueListenable: _controller.localePreferenceListenable,
-                  builder: (context, localePreference, _) {
-                    return MaterialApp(
-                      onGenerateTitle: (context) =>
-                          AppLocalizations.of(context).appTitle,
-                      debugShowCheckedModeBanner: false,
-                      // null 表示跟随系统语言（按 supportedLocales 解析，找不到回落中文）。
-                      locale: localePreference.locale,
-                      supportedLocales: AppLocalizations.supportedLocales,
-                      localizationsDelegates:
-                          AppLocalizations.localizationsDelegates,
-                      themeMode: themePreference.themeMode,
-                      theme: buildVeriFinTheme(
-                        Brightness.light,
-                        colorPreference: themeColorPreference,
-                      ),
-                      darkTheme: buildVeriFinTheme(
-                        Brightness.dark,
-                        colorPreference: themeColorPreference,
-                      ),
-                      builder: (context, child) => Material(
-                        type: MaterialType.transparency,
-                        child: PrivacyConsentGate(
-                          child: AppLockGate(
-                            child: OnboardingGate(
-                              child: VeriFeedbackHost(
-                                controller: _feedbackController,
-                                child: child ?? const SizedBox.shrink(),
+            return ValueListenableBuilder<ThemeStylePreference>(
+              valueListenable: _controller.themeStylePreferenceListenable,
+              builder: (context, themeStylePreference, _) {
+                return ValueListenableBuilder<ThemeColorPreference>(
+                  valueListenable: _controller.themeColorPreferenceListenable,
+                  builder: (context, themeColorPreference, _) {
+                    return ValueListenableBuilder<LocalePreference>(
+                      valueListenable: _controller.localePreferenceListenable,
+                      builder: (context, localePreference, _) {
+                        return MaterialApp(
+                          onGenerateTitle: (context) =>
+                              AppLocalizations.of(context).appTitle,
+                          debugShowCheckedModeBanner: false,
+                          // null 表示跟随系统语言（按 supportedLocales 解析，找不到回落中文）。
+                          locale: localePreference.locale,
+                          supportedLocales: AppLocalizations.supportedLocales,
+                          localizationsDelegates:
+                              AppLocalizations.localizationsDelegates,
+                          themeMode: themePreference.themeMode,
+                          theme: buildVeriFinTheme(
+                            Brightness.light,
+                            colorPreference: themeColorPreference,
+                            style: themeStylePreference,
+                          ),
+                          darkTheme: buildVeriFinTheme(
+                            Brightness.dark,
+                            colorPreference: themeColorPreference,
+                            style: themeStylePreference,
+                          ),
+                          builder: (context, child) => Material(
+                            type: MaterialType.transparency,
+                            child: PrivacyConsentGate(
+                              child: AppLockGate(
+                                child: OnboardingGate(
+                                  child: VeriFeedbackHost(
+                                    controller: _feedbackController,
+                                    child: child ?? const SizedBox.shrink(),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      home: const VeriFinShell(),
+                          home: const VeriFinShell(),
+                        );
+                      },
                     );
                   },
                 );
